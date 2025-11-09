@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Planes de Estudio - Carreras{% endblock %}
+
+{% block content %}
+<style>
+  .info-card {
+    border-radius: 18px;
+    border: none;
+    background: #e5f0ff;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  }
+
+  .table-soft {
+    background: #e5f0ff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.04);
+  }
+
+  .table-soft thead {
+    background: #dbeafe;
+    font-size: 0.82rem;
+  }
+
+  .pill-filter {
+    border-radius: 999px;
+    padding: 0.2rem 0.8rem;
+    border: none;
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  .pill-filter-active {
+    background: #2563eb;
+    color: #ffffff;
+  }
+
+  .pill-filter-soft {
+    background: #e5e7eb;
+    color: #374151;
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+  <div>
+    <h2 class="mb-0" style="font-size:1.2rem;">Planes de estudio</h2>
+    <small class="text-muted">
+      Catálogo de carreras registradas en el sistema
+      (<code>planes.carrera</code>).
+    </small>
+  </div>
+</div>
+
+<div class="card info-card mb-3">
+  <div class="card-body">
+    <div class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label mb-1" style="font-size:0.8rem;">Buscar por clave o nombre</label>
+        <input type="text" class="form-control form-control-sm"
+               placeholder="Ej: ISC, Ingeniería en Sistemas...">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label mb-1" style="font-size:0.8rem;">Tipo de carrera</label>
+        <select class="form-select form-select-sm">
+          <option>Todos</option>
+          <option>Ingenierías</option>
+          <option>Licenciaturas</option>
+          <option>Posgrados</option>
+        </select>
+      </div>
+      <div class="col-md-4 text-md-end">
+        <div class="mb-1">
+          <button class="pill-filter pill-filter-active me-1 mb-1">
+            Activos
+          </button>
+          <button class="pill-filter pill-filter-soft me-1 mb-1">
+            Inactivos
+          </button>
+        </div>
+        <button class="btn btn-primary btn-sm">
+          + Nueva carrera
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card info-card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-2">Listado de carreras</h6>
+    <p class="small text-muted mb-3">
+      Estas carreras se pueden vincular con planes de estudio, materias y grupos.
+    </p>
+
+    <div class="table-responsive table-soft">
+      <table class="table table-sm mb-0 align-middle">
+        <thead>
+          <tr>
+            <th style="width:10%;">ID</th>
+            <th style="width:20%;">Clave</th>
+            <th>Nombre</th>
+            <th style="width:18%;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if carreras %}
+            {% for c in carreras %}
+              <tr>
+                <td>{{ c.carrera_id }}</td>
+                <td class="fw-semibold">{{ c.clave }}</td>
+                <td>{{ c.nombre }}</td>
+                <td>
+                  <div class="d-flex flex-wrap gap-1">
+                    <button class="btn btn-outline-primary btn-sm">
+                      Ver plan
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm">
+                      Editar
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm">
+                      Desactivar
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-muted py-3">
+                No hay carreras registradas aún.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

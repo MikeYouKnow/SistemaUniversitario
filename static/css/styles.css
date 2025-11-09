@@ -1,0 +1,39 @@
+/* ==============================
+   Estilos generales del sistema
+   ============================== */
+
+aside {
+  background-color: #ffffff;
+}
+
+@media (min-width: 768px) {
+  aside {
+    min-height: calc(100vh - 56px); 
+  }
+}
+
+.card {
+  border-radius: 0.75rem;
+}
+
+.table th {
+  background-color: #f8f9fa;
+}
+
+.alert {
+  border-radius: 0.5rem;
+}
+
+.table tbody tr:hover {
+  background-color: #f1f3f5;
+}
+
+main {
+  min-height: calc(100vh - 80px);
+}
+
+@media (max-width: 767px) {
+  aside {
+    min-height: auto;
+  }
+}
