@@ -1,0 +1,73 @@
+{# templates/estudiante/perfil_administrativo.html #}
+{% extends "base.html" %}
+
+{% block title %}Información Administrativa{% endblock %}
+
+{% block content %}
+
+
+<div class="container mt-4 page-wrapper">
+
+  <div class="mb-3">
+    <h2 class="mb-1">Perfil Administrativo</h2>
+    <p class="text-muted-soft mb-0">
+      Consulta información administrativa asociada a tu cuenta como estudiante.
+    </p>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="card-soft h-100">
+        <div class="card-soft-header">
+          <span class="section-title">Datos de inscripción</span>
+        </div>
+        <div class="card-soft-body">
+          <dl class="row mb-0">
+            <dt class="col-5 text-muted-soft">Matrícula</dt>
+            <dd class="col-7">
+              {{ info_admin.matricula if info_admin is defined else '---' }}
+            </dd>
+
+            <dt class="col-5 text-muted-soft">Estatus</dt>
+            <dd class="col-7">
+              {{ info_admin.estatus if info_admin is defined else '---' }}
+            </dd>
+
+            <dt class="col-5 text-muted-soft">Periodo actual</dt>
+            <dd class="col-7">
+              {{ info_admin.periodo_actual if info_admin is defined else '---' }}
+            </dd>
+
+            <dt class="col-5 text-muted-soft">Fecha de ingreso</dt>
+            <dd class="col-7">
+              {{ info_admin.fecha_ingreso if info_admin is defined else '---' }}
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card-soft h-100">
+        <div class="card-soft-header">
+          <span class="section-title">Situación administrativa</span>
+        </div>
+        <div class="card-soft-body">
+          <dl class="row mb-0">
+            <dt class="col-5 text-muted-soft">Adeudos</dt>
+            <dd class="col-7">
+              {{ info_admin.adeudos if info_admin is defined else 'Sin adeudos registrados' }}
+            </dd>
+
+            <dt class="col-5 text-muted-soft">Observaciones</dt>
+            <dd class="col-7">
+              {{ info_admin.observaciones if info_admin is defined else '---' }}
+            </dd>
+          </dl>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

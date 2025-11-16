@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Documentos & QR{% endblock %}
+
+{% block content %}
+
+{% set tab = active_tab if active_tab is defined else 'documentos' %}
+
+<div class="student-main-shell">
+
+  <!-- Header estilo Flutter -->
+  <div class="card profile-header-card mb-4">
+    <div class="card-body text-center py-4">
+
+      {% set nombre = user.nombre_usuario or 'Estudiante' %}
+      {% set iniciales = nombre[:2]|upper %}
+
+      <div class="profile-avatar-circle">
+        {{ iniciales }}
+      </div>
+
+      <div class="mb-1">
+        <span class="profile-role-pill me-2">Estudiante</span>
+        <span class="profile-name">{{ nombre }}</span>
+      </div>
+
+      <div class="profile-subtitle">
+        Documentos entregados, pendientes y tus códigos QR importantes.
+      </div>
+
+      <div class="profile-tags">
+        <span class="profile-tag-pill profile-tag-green">Activo</span>
+        <span class="profile-tag-pill profile-tag-gray">Documentos</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="profile-tabs-wrapper mb-3">
+    <div class="profile-tabs">
+      <a href="{{ url_for('est_perfil_informacion') }}" class="profile-tab-link">
+        Información
+      </a>
+
+      <a href="{{ url_for('est_perfil_materias_horario') }}" class="profile-tab-link">
+        Materias &amp; Horario
+      </a>
+
+      <a href="{{ url_for('est_perfil_biblioteca') }}" class="profile-tab-link">
+        Biblioteca
+      </a>
+
+      <a href="{{ url_for('est_perfil_documentos') }}" class="profile-tab-link active">
+        Documentos &amp; QR
+      </a>
+
+      <a href="{{ url_for('est_perfil_formularios') }}" class="profile-tab-link">
+        Formularios
+      </a>
+
+      <a href="{{ url_for('est_perfil_aulas') }}" class="profile-tab-link">
+        Aulas
+      </a>
+    </div>
+  </div>
+
+  <!-- SECCIÓN: Documentos del Estudiante -->
+  <div class="section-card">
+
+    <div class="section-title mb-1">Documentos del estudiante</div>
+    <div class="section-caption mb-3">
+      Revisión del estado de tus documentos requeridos y entregados.
+    </div>
+
+    {% if documentos %}
+      <div class="section-table-wrapper">
+        <table class="section-table">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th>Estatus</th>
+              <th>Fecha entrega</th>
+              <th>Observaciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for d in documentos %}
+            <tr>
+              <td class="fw-semibold">{{ d.tipo_documento }}</td>
+
+              <td>
+                {% if d.estatus == "Aprobado" %}
+                    <span class="badge-soft-green">Aprobado</span>
+                {% elif d.estatus == "Pendiente" %}
+                    <span class="badge-soft-yellow">Pendiente</span>
+                {% elif d.estatus == "Rechazado" %}
+                    <span class="badge-soft-red">Rechazado</span>
+                {% else %}
+                    <span class="badge-soft-gray">{{ d.estatus or "N/A" }}</span>
+                {% endif %}
+              </td>
+
+              <td>{{ d.fecha_entrega or "---" }}</td>
+
+              <td>
+                <div class="text-muted" style="font-size:0.8rem;">
+                  {{ d.observaciones or "Sin observaciones" }}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-light border">
+        Aún no tienes documentos registrados.
+      </div>
+    {% endif %}
+
+  </div>
+
+
+  <!-- SECCIÓN: QR UNIVERSITARIO -->
+  <div class="section-card mt-4 text-center">
+
+    <div class="section-title mb-1">Código QR</div>
+    <div class="section-caption mb-3">Tu identificación digital universitaria.</div>
+
+    <div class="card mx-auto p-4 shadow-sm" style="max-width:280px; border-radius:20px;">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={{ user.id_usuario }}"
+           class="img-fluid rounded"
+           alt="QR">
+      <div class="mt-2 small text-muted">
+        ID de estudiante: {{ user.id_usuario }}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

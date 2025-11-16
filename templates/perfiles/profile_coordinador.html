@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Panel de Coordinación{% endblock %}
+
+{% block content %}
+<style>
+  .coord-header-card {
+    border-radius: 24px;
+    border: none;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  }
+
+  .coord-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 999px;
+    background: #7c3aed; /* morado coordinador */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 auto 0.75rem auto;
+  }
+
+  .coord-role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.7rem;
+    border-radius: 999px;
+    background: #7c3aed;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .chip-success {
+    background: #bbf7d0;
+    color: #166534;
+  }
+
+  .chip-soft {
+    background: #e5e7eb;
+    color: #4b5563;
+  }
+
+  .coord-section-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+  }
+
+  .coord-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .coord-feature-card {
+    border-radius: 22px;
+    background: #4c1d95;
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    min-height: 220px;
+    position: relative;
+  }
+
+  .coord-feature-card h6 {
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+
+  .coord-feature-card p {
+    font-size: 0.82rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .coord-feature-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.6rem;
+    font-size: 1.1rem;
+  }
+
+  .coord-feature-badges .badge {
+    border-radius: 999px;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.55rem;
+    border: none;
+  }
+
+  .badge-seg    { background:#22c55e; }
+  .badge-hor    { background:#0ea5e9; }
+  .badge-biblio { background:#f97316; }
+  .badge-est    { background:#a855f7; }
+  .badge-rep    { background:#eab308; }
+</style>
+
+{% set nombre = user.nombre_usuario or 'Coordinador' %}
+{% set iniciales = nombre[:2]|upper %}
+
+<!-- Encabezado coordinador -->
+<div class="card coord-header-card mb-4">
+  <div class="card-body text-center py-4">
+
+    <div class="coord-avatar">
+      {{ iniciales }}
+    </div>
+
+    <div class="mb-1">
+      <span class="coord-role-badge me-2">Coordinador</span>
+      <span class="fw-semibold" style="font-size:1.05rem;">
+        {{ nombre }}
+      </span>
+    </div>
+
+    <div class="text-muted" style="font-size:0.9rem;">
+      Supervisa la información académica y administrativa de tu programa,
+      coordinando docentes, grupos y estudiantes.
+    </div>
+
+    <div class="mt-3">
+      <span class="chip chip-success">Activo</span>
+      <span class="chip chip-soft">Ciclo actual</span>
+      <span class="chip chip-soft">Programa: Ing. en Sistemas</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sección de módulos -->
+<div class="mb-2 coord-section-title">
+  Módulos de coordinación
+</div>
+
+<div class="coord-card-grid">
+  <!-- Seguimiento académico -->
+  <div class="card coord-feature-card">
+    <div class="card-body d-flex flex-column">
+      <div class="coord-feature-icon">
+        📊
+      </div>
+      <h6>Seguimiento académico</h6>
+      <p>
+        Consulta indicadores de rendimiento por grupo, materia
+        y docente. Revisa promedios, tasas de reprobación y avance.
+      </p>
+      <div class="coord-feature-badges mt-auto">
+        <span class="badge badge-seg">Ver indicadores</span>
+        <span class="badge badge-rep">Reportes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grupos y horarios -->
+  <div class="card coord-feature-card">
+    <div class="card-body d-flex flex-column">
+      <div class="coord-feature-icon">
+        📅
+      </div>
+      <h6>Grupos y horarios</h6>
+      <p>
+        Administra la asignación de grupos, horarios y carga
+        académica de los docentes del programa.
+      </p>
+      <div class="coord-feature-badges mt-auto">
+        <span class="badge badge-hor">Gestionar horarios</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Biblioteca y recursos -->
+  <div class="card coord-feature-card">
+    <div class="card-body d-flex flex-column">
+      <div class="coord-feature-icon">
+        📚
+      </div>
+      <h6>Biblioteca y recursos</h6>
+      <p>
+        Da seguimiento al uso de material bibliográfico por
+        programa y detecta necesidades de actualización.
+      </p>
+      <div class="coord-feature-badges mt-auto">
+        <span class="badge badge-biblio">Ver recursos</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estudiantes -->
+  <div class="card coord-feature-card">
+    <div class="card-body d-flex flex-column">
+      <div class="coord-feature-icon">
+        👥
+      </div>
+      <h6>Estudiantes</h6>
+      <p>
+        Revisa listados de estudiantes, su situación académica
+        y vínculos con tutorías o servicios de apoyo.
+      </p>
+      <div class="coord-feature-badges mt-auto">
+        <span class="badge badge-est">Listados</span>
+        <span class="badge badge-rep">Reportes</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

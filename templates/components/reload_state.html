@@ -1,0 +1,52 @@
+{# templates/components/reload_state.html #}
+{% extends "base.html" %}
+
+{% block title %}Sin elementos{% endblock %}
+
+{% block content %}
+<div class="state-wrapper">
+  <div class="card-soft p-4 text-center" style="max-width: 420px;">
+    <div class="d-flex flex-column align-items-center gap-3">
+
+      <!-- Icono -->
+      <div
+        style="
+          width: 52px;
+          height: 52px;
+          border-radius: 999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: #e0f2fe;
+          color: #0369a1;
+          font-size: 1.5rem;"
+      >
+        ?
+      </div>
+
+      <!-- Texto -->
+      <div>
+        <div class="fw-semibold fs-5">No hay elementos</div>
+        <div class="text-muted-soft">Cuando haya contenido, aparecerá aquí</div>
+      </div>
+
+      <!-- Botones -->
+      <div class="d-flex justify-content-center gap-3 mt-2">
+        <a
+          href="javascript:location.reload()"
+          class="btn btn-soft-white px-4"
+        >
+          Actualizar
+        </a>
+
+        <a
+          href="{{ request.referrer or url_for('dashboard') }}"
+          class="btn btn-soft-danger px-4"
+        >
+          Salir
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

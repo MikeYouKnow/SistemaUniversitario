@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Panel Docente{% endblock %}
+
+{% block content %}
+<style>
+  .doc-header-card {
+    border-radius: 24px;
+    border: none;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  }
+
+  .doc-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 999px;
+    background: #2563eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0 auto 0.75rem auto;
+  }
+
+  .doc-role-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.7rem;
+    border-radius: 999px;
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .chip-success {
+    background: #bbf7d0;
+    color: #166534;
+  }
+
+  .chip-soft {
+    background: #e5e7eb;
+    color: #4b5563;
+  }
+
+  .doc-section-title {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #6b7280;
+  }
+
+  .doc-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+  }
+
+  .doc-feature-card {
+    border-radius: 22px;
+    background: #1d4ed8;
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+    min-height: 220px;
+    position: relative;
+  }
+
+  .doc-feature-card h6 {
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+
+  .doc-feature-card p {
+    font-size: 0.82rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .doc-feature-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.6rem;
+    font-size: 1.1rem;
+  }
+
+  .doc-feature-badges .badge {
+    border-radius: 999px;
+    font-size: 0.7rem;
+    padding: 0.2rem 0.55rem;
+    border: none;
+  }
+
+  .badge-grupos   { background:#22c55e; }
+  .badge-eval     { background:#f97316; }
+  .badge-asist    { background:#0ea5e9; }
+  .badge-rep      { background:#a855f7; }
+  .badge-horario  { background:#eab308; }
+</style>
+
+{% set nombre = user.nombre_usuario or 'Docente' %}
+{% set iniciales = nombre[:2]|upper %}
+
+<!-- Encabezado docente -->
+<div class="card doc-header-card mb-4">
+  <div class="card-body text-center py-4">
+
+    <div class="doc-avatar">
+      {{ iniciales }}
+    </div>
+
+    <div class="mb-1">
+      <span class="doc-role-badge me-2">Docente</span>
+      <span class="fw-semibold" style="font-size:1.05rem;">
+        {{ nombre }}
+      </span>
+    </div>
+
+    <div class="text-muted" style="font-size:0.9rem;">
+      Gestiona tus grupos, calificaciones, asistencias y reportes académicos.
+    </div>
+
+    <div class="mt-3">
+      <span class="chip chip-success">Activo</span>
+      <span class="chip chip-soft">Periodo actual</span>
+      <span class="chip chip-soft">Grupos asignados: --</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sección de módulos -->
+<div class="mb-2 doc-section-title">
+  Herramientas del docente
+</div>
+
+<div class="doc-card-grid">
+  <!-- Grupos y materias -->
+  <div class="card doc-feature-card">
+    <div class="card-body d-flex flex-column">
+      <div class="doc-feature-icon">
+        📚
+      </div>
+      <h6>Grupos y materias</h6>
+      <p>
+        Consulta los grupos que tienes asignados, las materias que impartes
+        y el listado de estudiantes por grupo.
+      </p>
+      <div class="doc-feature-badges mt-auto">
+        <span class="badge badge-grupos">Ver grupos</span>
+        <span class="badge badge-horario">Horario</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Evaluaciones -->
+  <div class="card doc-feature-card">
+    <div class="card-body d-flex flex-column">
+      <div class="doc-feature-icon">
+        📝
+      </div>
+      <h6>Evaluaciones</h6>
+      <p>
+        Captura calificaciones parciales y finales, genera reportes
+        de evaluación y revisa el historial académico de tus grupos.
+      </p>
+      <div class="doc-feature-badges mt-auto">
+        <span class="badge badge-eval">Capturar</span>
+        <span class="badge badge-rep">Reportes</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Asistencias -->
+  <div class="card doc-feature-card">
+    <div class="card-body d-flex flex-column">
+      <div class="doc-feature-icon">
+        📆
+      </div>
+      <h6>Control de asistencias</h6>
+      <p>
+        Registra asistencias, retardos y ausencias. Consulta estadísticas
+        por estudiante o por grupo.
+      </p>
+      <div class="doc-feature-badges mt-auto">
+        <span class="badge badge-asist">Marcar asistencia</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comunicación -->
+  <div class="card doc-feature-card">
+    <div class="card-body d-flex flex-column">
+      <div class="doc-feature-icon">
+        💬
+      </div>
+      <h6>Comunicación</h6>
+      <p>
+        Envía avisos a tus grupos y revisa notificaciones relacionadas
+        con tus materias y actividades académicas.
+      </p>
+      <div class="doc-feature-badges mt-auto">
+        <span class="badge badge-rep">Ver avisos</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

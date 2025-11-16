@@ -1,0 +1,19 @@
+{# templates/components/loading_state.html #}
+{% extends "base.html" %}
+
+{% block title %}Cargando datos{% endblock %}
+
+{% block content %}
+<div class="state-wrapper">
+  <div class="card-soft text-center p-4 state-card--loading" style="max-width: 420px;">
+    <div class="d-flex flex-column align-items-center gap-3">
+      <div class="loader-circle" aria-hidden="true"></div>
+
+      <div>
+        <div class="fw-semibold">Cargando…</div>
+        <div class="text-muted-soft">Preparando datos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

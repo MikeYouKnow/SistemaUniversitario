@@ -1,0 +1,150 @@
+{# templates/perfiles/profile_estudiante.html #}
+{% extends "base.html" %}
+
+{% block title %}Panel del Estudiante{% endblock %}
+
+{% block content %}
+<div class="container mt-4 page-wrapper">
+
+  <div class="mb-3">
+    <h2 class="mb-1">Panel del estudiante</h2>
+    <p class="text-muted-soft mb-0">
+      Hola, {{ user.nombre_usuario if user else 'Estudiante' }}. 
+      Desde aquí puedes acceder a la información más importante de tu vida académica.
+    </p>
+  </div>
+
+  <div class="row g-3">
+
+    <!-- Información general -->
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ url_for('est_perfil_informacion') }}" class="text-decoration-none text-reset">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Información del estudiante</span>
+          </div>
+          <div class="card-soft-body">
+            <p class="text-muted-soft mb-0">
+              Datos personales y académicos generales registrados en el sistema.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Materias & Horario -->
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ url_for('est_perfil_materias_horario') }}" class="text-decoration-none text-reset">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Materias y horario</span>
+          </div>
+          <div class="card-soft-body">
+            <p class="text-muted-soft mb-0">
+              Consulta las materias inscritas y el horario semanal.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Aulas -->
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ url_for('est_perfil_aulas') }}" class="text-decoration-none text-reset">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Aulas</span>
+          </div>
+          <div class="card-soft-body">
+            <p class="text-muted-soft mb-0">
+              Ubicación y detalles de las aulas que utilizas en el periodo actual.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Biblioteca -->
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ url_for('est_perfil_biblioteca') }}" class="text-decoration-none text-reset">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Biblioteca</span>
+          </div>
+          <div class="card-soft-body">
+            <p class="text-muted-soft mb-0">
+              Revisa tus préstamos activos, historial y solicita nuevos libros.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Formularios -->
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ url_for('est_perfil_formularios') }}" class="text-decoration-none text-reset">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Formularios</span>
+          </div>
+          <div class="card-soft-body">
+            <p class="text-muted-soft mb-0">
+              Fichas, entrevistas y otros formularios requeridos por tu institución.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Documentos -->
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ url_for('est_perfil_documentos') }}" class="text-decoration-none text-reset">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Documentos</span>
+          </div>
+          <div class="card-soft-body">
+            <p class="text-muted-soft mb-0">
+              Estado de constancias, comprobantes y otros documentos.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Administrativo -->
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ url_for('est_perfil_administrativo') }}" class="text-decoration-none text-reset">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Administrativo</span>
+          </div>
+          <div class="card-soft-body">
+            <p class="text-muted-soft mb-0">
+              Información sobre estatus administrativo, adeudos y observaciones.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <!-- Notificaciones -->
+    <div class="col-md-6 col-lg-4">
+      <a href="{{ url_for('est_notificaciones_all') }}" class="text-decoration-none text-reset">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Notificaciones</span>
+          </div>
+          <div class="card-soft-body">
+            <p class="text-muted-soft mb-0">
+              Avisos importantes y mensajes relacionados con tu actividad.
+            </p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

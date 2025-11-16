@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Formularios{% endblock %}
+
+{% block content %}
+
+{% set tab = active_tab if active_tab is defined else 'formularios' %}
+
+<div class="student-main-shell">
+
+  <!-- Header estilo Flutter -->
+  <div class="card profile-header-card mb-4">
+    <div class="card-body text-center py-4">
+
+      {% set nombre = user.nombre_usuario or 'Estudiante' %}
+      {% set iniciales = nombre[:2]|upper %}
+
+      <div class="profile-avatar-circle">
+        {{ iniciales }}
+      </div>
+
+      <div class="mb-1">
+        <span class="profile-role-pill me-2">Estudiante</span>
+        <span class="profile-name">{{ nombre }}</span>
+      </div>
+
+      <div class="profile-subtitle">
+        Revisa el estado de tus formularios de control escolar y seguimiento.
+      </div>
+
+      <div class="profile-tags">
+        <span class="profile-tag-pill profile-tag-green">Activo</span>
+        <span class="profile-tag-pill profile-tag-gray">Formularios</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="profile-tabs-wrapper mb-3">
+    <div class="profile-tabs">
+      <a href="{{ url_for('est_perfil_informacion') }}"
+         class="profile-tab-link">
+        Información
+      </a>
+
+      <a href="{{ url_for('est_perfil_materias_horario') }}"
+         class="profile-tab-link">
+        Materias &amp; Horario
+      </a>
+
+      <a href="{{ url_for('est_perfil_biblioteca') }}"
+         class="profile-tab-link">
+        Biblioteca
+      </a>
+
+      <a href="{{ url_for('est_perfil_documentos') }}"
+         class="profile-tab-link">
+        Documentos &amp; QR
+      </a>
+
+      <a href="{{ url_for('est_perfil_formularios') }}"
+         class="profile-tab-link active">
+        Formularios
+      </a>
+
+      <a href="{{ url_for('est_perfil_aulas') }}"
+         class="profile-tab-link">
+        Aulas
+      </a>
+    </div>
+  </div>
+
+  <!-- Sección principal -->
+  <div class="section-card">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <div class="section-title mb-1">Formularios del estudiante</div>
+        <div class="section-caption">
+          Estado de tus fichas, entrevistas, estudios socioeconómicos y otros formatos.
+        </div>
+      </div>
+      <div>
+        <input
+          type="text"
+          class="form-control section-search-input"
+          placeholder="Buscar formulario por nombre..."
+          oninput="filtrarFormularios(this.value)"
+        >
+      </div>
+    </div>
+
+    {% if formularios %}
+      <div class="section-table-wrapper">
+        <table class="section-table" id="tabla-formularios">
+          <thead>
+            <tr>
+              <th>Tipo de formulario</th>
+              <th>Estatus</th>
+              <th>Última actualización</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in formularios %}
+              <tr>
+                <td class="fw-semibold nombre-formulario">
+                  {{ f.tipo_formulario }}
+                </td>
+                <td>
+                  {% set est = f.estatus or "Pendiente" %}
+                  {% if est == "Completado" %}
+                    <span class="badge-soft-green">Completado</span>
+                  {% elif est == "En revisión" %}
+                    <span class="badge-soft-yellow">En revisión</span>
+                  {% elif est == "Rechazado" %}
+                    <span class="badge-soft-red">Rechazado</span>
+                  {% else %}
+                    <span class="badge-soft-yellow">{{ est }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {{ f.fecha_ultima_actualizacion or '---' }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-light border mb-0">
+        Aún no tienes formularios registrados en el sistema.
+      </div>
+    {% endif %}
+
+  </div>
+
+</div>
+
+<script>
+  function filtrarFormularios(texto) {
+    const filtro = texto.toLowerCase();
+    const filas = document.querySelectorAll("#tabla-formularios tbody tr");
+
+    filas.forEach(tr => {
+      const nombreCelda = tr.querySelector(".nombre-formulario");
+      if (!nombreCelda) return;
+
+      const contenido = nombreCelda.textContent.toLowerCase();
+      tr.style.display = contenido.includes(filtro) ? "" : "none";
+    });
+  }
+</script>
+
+{% endblock %}

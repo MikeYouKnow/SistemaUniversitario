@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Perfil del Estudiante{% endblock %}
+
+{% block content %}
+
+{# Determinar pestaña activa (por si no mandas active_tab desde Flask) #}
+{% set tab = active_tab if active_tab is defined else 'informacion' %}
+
+<div class="student-main-shell">
+
+  <!-- Header de perfil (avatar, nombre, carrera, chips) -->
+  <div class="card profile-header-card mb-4">
+    <div class="card-body text-center py-4">
+      {% set nombre = user.nombre_usuario or 'Estudiante' %}
+      {% set iniciales = nombre[:2] | upper %}
+
+      <div class="profile-avatar-circle">
+        {{ iniciales }}
+      </div>
+
+      <div class="mb-1">
+        <span class="profile-role-pill me-2">Estudiante</span>
+        <span class="profile-name">
+          {{ nombre }}
+        </span>
+      </div>
+
+      <div class="profile-subtitle">
+        {{ info_estudiante.carrera or 'Carrera no asignada' }}<br>
+        Matrícula: {{ info_estudiante.matricula or '---' }}
+      </div>
+
+      <div class="profile-tags">
+        <span class="profile-tag-pill profile-tag-green">
+          Activo
+        </span>
+         <span class="profile-tag-pill profile-tag-gray">
+          {{ info_estudiante.semestre or '---' }}° Semestre
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de pestañas (Información / Materias & Horario / etc) -->
+  <div class="profile-tabs-wrapper mb-3">
+    <div class="profile-tabs">
+      <a href="{{ url_for('est_perfil_informacion') }}"
+         class="profile-tab-link {% if tab == 'informacion' %}active{% endif %}">
+        Información
+      </a>
+
+      <a href="{{ url_for('est_perfil_materias_horario') }}"
+         class="profile-tab-link {% if tab == 'materias' %}active{% endif %}">
+        Materias &amp; Horario
+      </a>
+
+      <a href="{{ url_for('est_perfil_biblioteca') }}"
+         class="profile-tab-link {% if tab == 'biblioteca' %}active{% endif %}">
+        Biblioteca
+      </a>
+
+      <a href="{{ url_for('est_perfil_documentos') }}"
+         class="profile-tab-link {% if tab == 'documentos' %}active{% endif %}">
+        Documentos &amp; QR
+      </a>
+
+      <a href="{{ url_for('est_perfil_formularios') }}"
+         class="profile-tab-link {% if tab == 'formularios' %}active{% endif %}">
+        Formularios
+      </a>
+
+      <a href="{{ url_for('est_perfil_aulas') }}"
+         class="profile-tab-link {% if tab == 'aulas' %}active{% endif %}">
+        Aulas
+      </a>
+    </div>
+  </div>
+
+  <!-- Contenido principal de la pestaña "Información" -->
+  <div class="ficha-grid">
+
+    <!-- Datos personales -->
+    <div class="ficha-card">
+      <div class="ficha-card-title">Datos personales</div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Nombre completo</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.nombre_completo or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">CURP</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.curp or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Correo institucional</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.correo or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Teléfono</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.telefono or '---' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Información académica -->
+    <div class="ficha-card">
+      <div class="ficha-card-title">Información académica</div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Matrícula</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.matricula or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Carrera</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.carrera or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Semestre</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.semestre or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Grupo</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.grupo or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Turno</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.turno or '---' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Contacto / datos complementarios -->
+    <div class="ficha-card">
+      <div class="ficha-card-title">Información de contacto</div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Correo</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.correo or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Teléfono</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.telefono or '---' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Estado</div>
+        <div class="col-7 ficha-field-value">
+          Activo
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutor académico -->
+    <div class="ficha-card">
+      <div class="ficha-card-title">Tutor académico</div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Nombre</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.tutor_nombre or 'No asignado' }}
+        </div>
+      </div>
+
+      <div class="row mb-1">
+        <div class="col-5 ficha-field-label">Correo</div>
+        <div class="col-7 ficha-field-value">
+          {{ info_estudiante.tutor_correo or '---' }}
+        </div>
+      </div>
+
+      <div class="row mt-2">
+        <div class="col-12">
+          <span class="text-muted" style="font-size:0.8rem;">
+            Tu tutor académico será el responsable de acompañarte en tu trayectoria escolar.
+          </span>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- /ficha-grid -->
+
+</div> <!-- /student-main-shell -->
+
+{% endblock %}

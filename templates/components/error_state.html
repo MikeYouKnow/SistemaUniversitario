@@ -1,0 +1,51 @@
+{# templates/components/error_state.html #}
+{% extends "base.html" %}
+
+{% block title %}Error cargando datos{% endblock %}
+
+{% block content %}
+<div class="state-wrapper">
+  <div class="state-card state-card--error">
+    <div class="state-card__icon">
+      <i class="bi bi-exclamation-circle-fill"></i>
+    </div>
+
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-center justify-content-between mb-1">
+        <div>
+          <div class="fw-semibold">Error cargando datos</div>
+          <button
+            type="button"
+            class="btn btn-link p-0 m-0 align-baseline text-decoration-none"
+            style="font-size: 0.8rem;"
+          >
+            Ver detalles
+          </button>
+        </div>
+
+        <small class="text-muted-soft d-none d-md-inline">
+          Mensaje de error. Lo puedes adaptar al intentar corregir los datos del
+          servidor.
+        </small>
+      </div>
+
+      <p class="text-muted-soft mb-3 d-md-none">
+        Mensaje de error. Lo puedes adaptar al intentar corregir los datos del
+        servidor.
+      </p>
+
+      <div class="d-flex justify-content-end gap-2">
+        <a
+          href="{{ request.referrer or url_for('dashboard') }}"
+          class="btn btn-soft-white btn-sm"
+        >
+          Reintentar
+        </a>
+        <a href="{{ url_for('logout') }}" class="btn btn-soft-danger btn-sm">
+          Salir
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

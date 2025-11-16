@@ -1,0 +1,105 @@
+{# templates/estudiante/solicitar_libro_modal.html #}
+{% extends "base.html" %}
+
+{% block title %}Solicitar libro{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4 page-wrapper">
+
+  <div class="mb-3">
+    <h2 class="mb-1">Solicitar libro</h2>
+    <p class="text-muted-soft mb-0">
+      Busca un libro en el catálogo de biblioteca y realiza una solicitud de préstamo.
+    </p>
+  </div>
+
+  <!-- Buscador -->
+  <div class="card-soft mb-3">
+    <div class="card-soft-header">
+      <span class="section-title">Búsqueda de libro</span>
+    </div>
+    <div class="card-soft-body">
+      <form method="get" class="row g-2">
+        <div class="col-md-8">
+          <label class="form-label text-muted-soft mb-1">Título o autor</label>
+          <input
+            type="text"
+            name="q"
+            class="form-control form-control-sm"
+            placeholder="Escribe parte del título o el autor"
+            value="{{ request.args.get('q', '') }}"
+          >
+        </div>
+        <div class="col-md-4 d-flex align-items-end justify-content-end">
+          <button type="submit" class="btn btn-primary btn-sm me-2">
+            Buscar
+          </button>
+          <a href="{{ url_for('est_solicitar_libro_modal') }}" class="btn btn-soft-white btn-sm">
+            Limpiar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Resultados -->
+  <div class="card-soft">
+    <div class="card-soft-header d-flex justify-content-between align-items-center">
+      <span class="section-title">Resultados</span>
+      <small class="text-muted-soft">
+        Total: {{ resultados|length if resultados is defined else 0 }}
+      </small>
+    </div>
+    <div class="card-soft-body">
+      {% if resultados and resultados|length > 0 %}
+      <div class="table-responsive">
+        <table class="table table-soft align-middle">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Autor</th>
+              <th>Ejemplares disp.</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for libro in resultados %}
+            <tr>
+              <td>{{ libro.titulo or '---' }}</td>
+              <td>{{ libro.autor or '---' }}</td>
+              <td>{{ libro.ejemplares_disponibles or 0 }}</td>
+              <td>
+                {% if libro.ejemplares_disponibles|int > 0 %}
+                <form
+                  method="post"
+                  action="{{ url_for('est_solicitar_libro_modal') }}"
+                  class="d-inline"
+                >
+                  <input type="hidden" name="id_libro" value="{{ libro.id_libro }}">
+                  <button
+                    type="submit"
+                    class="btn btn-primary btn-sm"
+                  >
+                    Solicitar
+                  </button>
+                </form>
+                {% else %}
+                <span class="badge-soft-danger">Sin disponibilidad</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted-soft mb-0">
+        No se encontraron libros. Intenta con otra búsqueda.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

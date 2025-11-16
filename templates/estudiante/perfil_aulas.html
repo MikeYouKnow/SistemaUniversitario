@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block title %}Aulas{% endblock %}
+
+{% block content %}
+
+{% set tab = active_tab if active_tab is defined else 'aulas' %}
+
+<div class="student-main-shell">
+
+  <!-- Header estilo Flutter -->
+  <div class="card profile-header-card mb-4">
+    <div class="card-body text-center py-4">
+
+      {% set nombre = user.nombre_usuario or 'Estudiante' %}
+      {% set iniciales = nombre[:2]|upper %}
+
+      <div class="profile-avatar-circle">
+        {{ iniciales }}
+      </div>
+
+      <div class="mb-1">
+        <span class="profile-role-pill me-2">Estudiante</span>
+        <span class="profile-name">{{ nombre }}</span>
+      </div>
+
+      <div class="profile-subtitle">
+        Consulta las aulas donde se imparten tus clases y su disponibilidad.
+      </div>
+
+      <div class="profile-tags">
+        <span class="profile-tag-pill profile-tag-green">Activo</span>
+        <span class="profile-tag-pill profile-tag-gray">Aulas</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="profile-tabs-wrapper mb-3">
+    <div class="profile-tabs">
+      <a href="{{ url_for('est_perfil_informacion') }}"
+         class="profile-tab-link">
+        Información
+      </a>
+
+      <a href="{{ url_for('est_perfil_materias_horario') }}"
+         class="profile-tab-link">
+        Materias &amp; Horario
+      </a>
+
+      <a href="{{ url_for('est_perfil_biblioteca') }}"
+         class="profile-tab-link">
+        Biblioteca
+      </a>
+
+      <a href="{{ url_for('est_perfil_documentos') }}"
+         class="profile-tab-link">
+        Documentos &amp; QR
+      </a>
+
+      <a href="{{ url_for('est_perfil_formularios') }}"
+         class="profile-tab-link">
+        Formularios
+      </a>
+
+      <a href="{{ url_for('est_perfil_aulas') }}"
+         class="profile-tab-link active">
+        Aulas
+      </a>
+    </div>
+  </div>
+
+  <!-- Sección principal: filtros + tabla -->
+  <div class="section-card">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <div>
+        <div class="section-title mb-1">Explorador de aulas</div>
+        <div class="section-caption">
+          Filtra por edificio, piso, tipo de aula o busca por clave.
+        </div>
+      </div>
+    </div>
+
+        <!-- Filtros -->
+    <form class="mb-3" method="GET">
+      <div class="aulas-filter-row">
+        <input
+          type="text"
+          name="q"
+          value="{{ request.args.get('q', '') }}"
+          class="form-control"
+          placeholder="Buscar por clave o descripción..."
+        >
+
+        <!-- Edificio -->
+        <select name="edificio" class="form-select">
+          <option value="">Edificio (todos)</option>
+          {% for edif in edificios %}
+            <option value="{{ edif.numero }}"
+              {% if request.args.get('edificio') == edif.numero|string %}selected{% endif %}>
+              Edificio {{ edif.numero }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <!-- Piso -->
+        <select name="piso" class="form-select">
+          <option value="">Piso (todos)</option>
+          {% for p in pisos %}
+            <option value="{{ p }}"
+              {% if request.args.get('piso') == p|string %}selected{% endif %}>
+              Piso {{ p }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <!-- Tipo de aula -->
+        <select name="tipo" class="form-select">
+          <option value="">Tipo de aula</option>
+          {% for t in tipos_aula %}
+            <option value="{{ t.nombre }}"
+              {% if request.args.get('tipo') == t.nombre %}selected{% endif %}>
+              {{ t.nombre }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary rounded-pill px-4">
+          Aplicar filtros
+        </button>
+      </div>
+    </form>
+
+    {% if aulas %}
+      <div class="section-table-wrapper">
+        <table class="section-table">
+          <thead>
+            <tr>
+              <th>Clave</th>
+              <th>Edificio</th>
+              <th>Piso</th>
+              <th>Capacidad</th>
+              <th>Tipo</th>
+              <th>Observaciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in aulas %}
+              <tr>
+                <td class="fw-semibold">
+                  {{ a.clave or a.aula_clave or '---' }}
+                </td>
+                <td>
+                  {{ a.edificio_nombre or a.edificio or '---' }}
+                </td>
+                <td>
+                  {{ a.piso if a.piso is not none else '---' }}
+                </td>
+                <td>
+                  {{ a.capacidad if a.capacidad is not none else '---' }}
+                </td>
+                <td>
+                  {{ a.tipo_nombre or a.tipo_aula or 'General' }}
+                </td>
+                <td>
+                  <span class="text-muted" style="font-size:0.8rem;">
+                    {{ a.observaciones or 'Sin observaciones' }}
+                  </span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-light border mb-0">
+        No se encontraron aulas con los filtros actuales.
+      </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

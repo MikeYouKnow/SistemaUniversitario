@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Biblioteca{% endblock %}
+
+{% block content %}
+
+{% set tab = active_tab if active_tab is defined else 'biblioteca' %}
+
+<div class="student-main-shell">
+
+  <!-- Header del estudiante (igual estilo Flutter) -->
+  <div class="card profile-header-card mb-4">
+    <div class="card-body text-center py-4">
+
+      {% set nombre = user.nombre_usuario or 'Estudiante' %}
+      {% set iniciales = nombre[:2]|upper %}
+
+      <div class="profile-avatar-circle">
+        {{ iniciales }}
+      </div>
+
+      <div class="mb-1">
+        <span class="profile-role-pill me-2">Estudiante</span>
+        <span class="profile-name">{{ nombre }}</span>
+      </div>
+
+      <div class="profile-subtitle">
+        Consulta tus préstamos activos y tu historial en biblioteca.
+      </div>
+
+      <div class="profile-tags">
+        <span class="profile-tag-pill profile-tag-green">Activo</span>
+        <span class="profile-tag-pill profile-tag-gray">Biblioteca</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="profile-tabs-wrapper mb-3">
+    <div class="profile-tabs">
+      <a href="{{ url_for('est_perfil_informacion') }}"
+         class="profile-tab-link">
+        Información
+      </a>
+
+      <a href="{{ url_for('est_perfil_materias_horario') }}"
+         class="profile-tab-link">
+        Materias &amp; Horario
+      </a>
+
+      <a href="{{ url_for('est_perfil_biblioteca') }}"
+         class="profile-tab-link active">
+        Biblioteca
+      </a>
+
+      <a href="{{ url_for('est_perfil_documentos') }}"
+         class="profile-tab-link">
+        Documentos &amp; QR
+      </a>
+
+      <a href="{{ url_for('est_perfil_formularios') }}"
+         class="profile-tab-link">
+        Formularios
+      </a>
+
+      <a href="{{ url_for('est_perfil_aulas') }}"
+         class="profile-tab-link">
+        Aulas
+      </a>
+    </div>
+  </div>
+
+  <!-- PRÉSTAMOS ACTIVOS -->
+  <div class="section-card mb-4">
+    <div class="biblioteca-section-header mb-2">
+      <div>
+        <div class="section-title mb-0">Préstamos activos</div>
+        <div class="section-caption">
+          Libros que tienes actualmente prestados y su fecha de devolución.
+        </div>
+      </div>
+      <div>
+        <a href="{{ url_for('est_solicitar_libro_modal') }}" class="btn btn-sm btn-primary rounded-pill">
+          + Solicitar libro
+        </a>
+      </div>
+    </div>
+
+    {% if prestamos_activos %}
+      <div class="section-table-wrapper">
+        <table class="section-table">
+          <thead>
+            <tr>
+              <th>Libro</th>
+              <th>Código / ID</th>
+              <th>Fecha préstamo</th>
+              <th>Fecha devolución</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in prestamos_activos %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">
+                    {{ p.titulo_libro or p.titulo or 'Sin título' }}
+                  </div>
+                  <div class="text-muted" style="font-size:0.78rem;">
+                    {{ p.autor or p.nombre_autor or '' }}
+                  </div>
+                </td>
+                <td>{{ p.id_prestamo }}</td>
+                <td>{{ p.fecha_prestamo }}</td>
+                <td>
+                  {{ p.fecha_devolucion_estimada or p.fecha_limite or '---' }}
+                </td>
+                <td>
+                  {% set estado = p.estado if p.estado is defined else 'Activo' %}
+                  {% if estado == 'Devuelto' %}
+                    <span class="badge-soft-green">Devuelto</span>
+                  {% elif estado == 'Vencido' %}
+                    <span class="badge-soft-red">Vencido</span>
+                  {% else %}
+                    <span class="badge-soft-yellow">Activo</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info mb-0">
+        No tienes préstamos activos en este momento.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- HISTORIAL DE PRÉSTAMOS -->
+  <div class="section-card">
+    <div class="section-title mb-1">Historial de préstamos</div>
+    <div class="section-caption mb-2">
+      Consulta los libros que has solicitado anteriormente.
+    </div>
+
+    {% if historial_prestamos %}
+      <div class="section-table-wrapper">
+        <table class="section-table">
+          <thead>
+            <tr>
+              <th>Libro</th>
+              <th>Código / ID</th>
+              <th>Fecha préstamo</th>
+              <th>Fecha devolución real</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for h in historial_prestamos %}
+              <tr>
+                <td>
+                  <div class="fw-semibold">
+                    {{ h.titulo_libro or h.titulo or 'Sin título' }}
+                  </div>
+                  <div class="text-muted" style="font-size:0.78rem;">
+                    {{ h.autor or h.nombre_autor or '' }}
+                  </div>
+                </td>
+                <td>{{ h.id_prestamo }}</td>
+                <td>{{ h.fecha_prestamo }}</td>
+                <td>{{ h.fecha_devolucion_real or '---' }}</td>
+                <td>
+                  {% set estado_h = h.estado if h.estado is defined else 'Devuelto' %}
+                  {% if estado_h == 'Vencido' %}
+                    <span class="badge-soft-red">Vencido</span>
+                  {% else %}
+                    <span class="badge-soft-green">Devuelto</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-light border mb-0">
+        Aún no hay historial de préstamos registrados.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<style>
+  .biblioteca-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  @media (max-width: 576px) {
+    .biblioteca-section-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+
+{% endblock %}

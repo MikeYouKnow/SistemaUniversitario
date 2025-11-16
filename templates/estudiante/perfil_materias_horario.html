@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Materias y Horario{% endblock %}
+
+{% block content %}
+
+{% set tab = active_tab if active_tab is defined else 'materias' %}
+
+<div class="student-main-shell">
+
+  <!-- Header del estudiante reutilizado -->
+  <div class="card profile-header-card mb-4">
+    <div class="card-body text-center py-4">
+
+      {% set nombre = user.nombre_usuario or 'Estudiante' %}
+      {% set iniciales = nombre[:2]|upper %}
+
+      <div class="profile-avatar-circle">
+        {{ iniciales }}
+      </div>
+
+      <div class="mb-1">
+        <span class="profile-role-pill me-2">Estudiante</span>
+        <span class="profile-name">{{ nombre }}</span>
+      </div>
+
+      <div class="profile-subtitle">
+        Consulta tus materias inscritas y tu horario semanal.
+      </div>
+
+      <div class="profile-tags">
+  <span class="profile-tag-pill profile-tag-green">
+    Activo
+  </span>
+  <span class="profile-tag-pill profile-tag-gray">
+    {{ info_estudiante.semestre or '---' }}° Semestre
+  </span>
+</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="profile-tabs-wrapper mb-3">
+    <div class="profile-tabs">
+      <a href="{{ url_for('est_perfil_informacion') }}"
+         class="profile-tab-link">Información</a>
+
+      <a href="{{ url_for('est_perfil_materias_horario') }}"
+         class="profile-tab-link active">
+        Materias &amp; Horario
+      </a>
+
+      <a href="{{ url_for('est_perfil_biblioteca') }}"
+         class="profile-tab-link">Biblioteca</a>
+
+      <a href="{{ url_for('est_perfil_documentos') }}"
+         class="profile-tab-link">Documentos &amp; QR</a>
+
+      <a href="{{ url_for('est_perfil_formularios') }}"
+         class="profile-tab-link">Formularios</a>
+
+      <a href="{{ url_for('est_perfil_aulas') }}"
+         class="profile-tab-link">Aulas</a>
+    </div>
+  </div>
+
+  <!-- Sección de Materias -->
+  <h5 class="mb-3 fw-semibold">Materias inscritas</h5>
+
+  {% if materias %}
+    <div class="materias-grid mb-4">
+      {% for m in materias %}
+        <div class="materia-card card">
+          <div class="card-body">
+            <div class="materia-icon">📘</div>
+
+            <div class="materia-title">{{ m.nombre_materia }}</div>
+            <div class="materia-clave">({{ m.clave_materia }})</div>
+
+            <div class="materia-meta mt-2">
+              <div><strong>Docente:</strong> {{ m.docente }}</div>
+              <div><strong>Créditos:</strong> {{ m.creditos }}</div>
+              <div><strong>Grupo:</strong> {{ m.grupo }}</div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">No tienes materias registradas.</div>
+  {% endif %}
+
+  <!-- Sección Horario -->
+  <h5 class="mb-3 fw-semibold">Horario semanal</h5>
+
+  {% if horario %}
+    <div class="horario-grid">
+      {% for h in horario %}
+        <div class="horario-card card">
+          <div class="card-body">
+            <div class="horario-icon">⏰</div>
+
+            <div class="horario-title">{{ h.nombre_materia }}</div>
+
+            <div class="horario-meta mt-2">
+              <div><strong>Día:</strong> {{ h.dia_semana }}</div>
+              <div><strong>Inicio:</strong> {{ h.hora_inicio }}</div>
+              <div><strong>Fin:</strong> {{ h.hora_fin }}</div>
+              <div><strong>Aula:</strong> {{ h.aula }}</div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-info">Aún no tienes horario asignado.</div>
+  {% endif %}
+
+</div>
+
+<style>
+  /* Grids tipo Flutter */
+  .materias-grid,
+  .horario-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+
+  /* Tarjeta de materia */
+  .materia-card {
+    border-radius: 20px;
+    background: #e0f2fe;
+    border: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+  }
+
+  .materia-icon {
+    width: 48px;
+    height: 48px;
+    background: #2563eb;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.3rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .materia-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #1e3a8a;
+  }
+
+  .materia-clave {
+    font-size: 0.85rem;
+    color: #475569;
+  }
+
+  .materia-meta {
+    font-size: 0.85rem;
+    color: #334155;
+  }
+
+  /* Horario */
+  .horario-card {
+    border-radius: 20px;
+    background: #ede9fe;
+    border: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+  }
+
+  .horario-icon {
+    width: 48px;
+    height: 48px;
+    background: #7c3aed;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.3rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .horario-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #4c1d95;
+  }
+
+  .horario-meta {
+    font-size: 0.85rem;
+    color: #4b5563;
+    line-height: 1.3rem;
+  }
+</style>
+
+{% endblock %}
