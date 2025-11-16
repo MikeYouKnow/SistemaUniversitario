@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Evaluaciones{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Evaluación y calificaciones</h2>
+
+  <form class="row g-2 mt-2 mb-3" method="get" action="{{ url_for('docente_evaluaciones') }}">
+    <div class="col-md-6">
+      <label for="materia_alta_id" class="form-label">Materia</label>
+      <select name="materia_alta_id" id="materia_alta_id" class="form-select" onchange="this.form.submit()">
+        {% for m in materias_docente %}
+          <option value="{{ m.materia_alta_id }}"
+            {% if m.materia_alta_id|string == materia_alta_id|string %}selected{% endif %}>
+            {{ m.ciclo }} - {{ m.etiqueta }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  {% if calificaciones %}
+    <div class="table-responsive">
+      <table class="table table-sm table-striped align-middle">
+        <thead>
+          <tr>
+            <th>Número de control</th>
+            <th>Alumno</th>
+            <th>Materia</th>
+            <th>Calificación</th>
+            <th>Guardar</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in calificaciones %}
+          <tr>
+            <td>{{ c.numero_control }}</td>
+            <td>{{ c.alumno }}</td>
+            <td>{{ c.materia_clave }} - {{ c.materia_nombre }}</td>
+            <td style="max-width:120px;">
+              <form method="post" class="d-flex">
+                <input type="hidden" name="materia_alta_id" value="{{ materia_alta_id }}">
+                <input type="hidden" name="inscripcion_id" value="{{ c.inscripcion_id }}">
+                <input
+                  type="number"
+                  name="calificacion"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  class="form-control form-control-sm me-2"
+                  value="{{ c.calificacion if c.calificacion is not none }}"
+                >
+                <button class="btn btn-sm btn-primary">💾</button>
+              </form>
+            </td>
+            <td></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info mt-3">
+      No hay alumnos inscritos en esta materia.
+    </div>
+  {% endif %}
+
+  <a href="{{ url_for('perfil_docente') }}" class="btn btn-secondary mt-3">Volver al panel del docente</a>
+</div>
+{% endblock %}
