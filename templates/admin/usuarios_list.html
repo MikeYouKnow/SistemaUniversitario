@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Administración de usuarios{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Administración de usuarios</h4>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('perfil_administrador') }}" class="btn btn-outline-secondary btn-sm">
+      ← Volver al panel
+    </a>
+    <a href="{{ url_for('admin_usuario_nuevo') }}" class="btn btn-primary btn-sm">
+      + Nuevo usuario
+    </a>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-center">
+      <input type="hidden" name="modo" value="{{ modo }}">
+      <div class="col-md-8">
+        <input
+          type="text"
+          class="form-control"
+          name="q"
+          placeholder="Buscar por usuario, correo o rol..."
+          value="{{ q or '' }}"
+        >
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+        <a href="{{ url_for('admin_usuarios_list', modo=modo) }}" class="btn btn-outline-secondary btn-sm">
+          Limpiar
+        </a>
+      </div>
+    </form>
+    <div class="mt-2">
+      <small class="text-muted">
+        Modo actual:
+        <strong>{{ modo }}</strong>
+        {% if modo == 'edit' %}(solo edición){% endif %}
+        {% if modo == 'baja' %}(solo baja){% endif %}
+        {% if modo == 'block' %}(solo bloquear/desbloquear){% endif %}
+        {% if modo == 'reset' %}(solo reset de contraseña){% endif %}
+        {% if modo == 'buscar' %}(búsqueda + editar){% endif %}
+      </small>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th style="width: 60px;">ID</th>
+          <th>Usuario</th>
+          <th>Correo</th>
+          <th>Roles</th>
+          <th style="width: 120px;">Estatus</th>
+          <th style="width: 250px;">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in usuarios %}
+          <tr>
+            <td>{{ u.id_usuario }}</td>
+            <td>{{ u.nombre_usuario }}</td>
+            <td>{{ u.correo_electronico }}</td>
+            <td>
+              {% if u.roles %}
+                {% for r in u.roles %}
+                  <span class="badge bg-secondary me-1 mb-1">{{ r }}</span>
+                {% endfor %}
+              {% else %}
+                <span class="text-muted">Sin rol</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.activo %}
+                <span class="badge bg-success">Activo</span>
+              {% else %}
+                <span class="badge bg-danger">Bloqueado</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                {# EDITAR #}
+                {% if modo in ['todos', 'edit', 'buscar'] %}
+                  <a href="{{ url_for('admin_usuario_editar', id_usuario=u.id_usuario) }}" class="btn btn-sm btn-outline-primary">
+                    Editar
+                  </a>
+                {% endif %}
+
+                {# BAJA (ELIMINAR) #}
+                {% if modo in ['todos', 'baja'] %}
+                  <form action="{{ url_for('admin_usuario_baja', id_usuario=u.id_usuario) }}"
+                        method="post"
+                        onsubmit="return confirm('¿Seguro que deseas dar de baja (eliminar) este usuario?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      Baja
+                    </button>
+                  </form>
+                {% endif %}
+
+                {# BLOQUEAR / DESBLOQUEAR #}
+                {% if modo in ['todos', 'block'] %}
+                  <form action="{{ url_for('admin_usuario_block', id_usuario=u.id_usuario) }}" method="post">
+                    <button type="submit" class="btn btn-sm btn-outline-warning">
+                      {% if u.activo %}Bloquear{% else %}Desbloquear{% endif %}
+                    </button>
+                  </form>
+                {% endif %}
+
+                {# RESET PASSWORD #}
+                {% if modo in ['todos', 'reset'] %}
+                  <form action="{{ url_for('admin_usuario_reset', id_usuario=u.id_usuario) }}"
+                        method="post"
+                        onsubmit="return confirm('¿Restablecer la contraseña de este usuario?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      Reset pass
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              No se encontraron usuarios con los filtros actuales.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

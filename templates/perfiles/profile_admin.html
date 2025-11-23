@@ -3,7 +3,7 @@
 
 {% block content %}
 
-{# === Lógica de rol para el encabezado y el botón === #}
+{# === Lógica de rol para el encabezado === #}
 {% set es_admin = 'Administrador' in user.roles %}
 {% set nombre = user.nombre_usuario or 'Administrador' %}
 {% set iniciales = nombre[:2]|upper %}
@@ -55,6 +55,7 @@
     font-weight: 500;
     margin-right: 0.35rem;
     margin-bottom: 0.35rem;
+    text-decoration: none;
   }
 
   .chip-success {
@@ -150,15 +151,6 @@
       <span class="chip chip-success">Activo</span>
     </div>
 
-    {# Botón para crear usuario: solo lo ve el rol Administrador #}
-    {% if es_admin %}
-       <div class="d-flex justify-content-end mb-3">
-        <a href="#mod-usuarios-roles" class="btn btn-sm btn-primary" style="border-radius: 999px;">
-          + Crear nuevo usuario
-        </a>
-      </div>
-    {% endif %}
-
   </div>
 </div>
 
@@ -179,12 +171,12 @@
         Crear, editar, borrar, bloquear usuarios. Gestión de permisos y roles del sistema.
       </p>
       <div class="admin-feature-badges mt-auto">
-        <span class="badge badge-add">Alta</span>
-        <span class="badge badge-edit">Edit</span>
-        <span class="badge badge-del">Baja</span>
-        <span class="badge badge-block">Block</span>
-        <span class="badge badge-reset">Reset</span>
-        <span class="badge badge-search">Buscar</span>
+        <a href="{{ url_for('admin_usuario_nuevo') }}" class="badge badge-add text-decoration-none text-white">Alta</a>
+        <a href="{{ url_for('admin_usuarios_list', modo='edit') }}" class="badge badge-edit text-decoration-none text-white">Edit</a>
+        <a href="{{ url_for('admin_usuarios_list', modo='baja') }}" class="badge badge-del text-decoration-none text-white">Baja</a>
+        <a href="{{ url_for('admin_usuarios_list', modo='block') }}" class="badge badge-block text-decoration-none text-white">Block</a>
+        <a href="{{ url_for('admin_usuarios_list', modo='reset') }}" class="badge badge-reset text-decoration-none text-white">Reset</a>
+        <a href="{{ url_for('admin_usuarios_list', modo='buscar') }}" class="badge badge-search text-decoration-none text-white">Buscar</a>
       </div>
     </div>
   </div>

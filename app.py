@@ -1341,7 +1341,7 @@ def bib_notificaciones():
 
 
 # =====================================
-# ADMIN – LISTA DE USUARIOS
+# ADMIN – LISTA DE USUARIOS (con modos)
 # =====================================
 
 @app.route("/admin/usuarios")
@@ -1349,26 +1349,58 @@ def bib_notificaciones():
 @role_required("Administrador")
 def admin_usuarios_list():
     user = current_user()
+    modo = request.args.get("modo", "todos")  # todos, edit, baja, block, reset, buscar
+    q = request.args.get("q", "").strip()
+
     usuarios = []
 
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("""
+
+        base_sql = """
             SELECT
                 u.id_usuario,
                 u.nombre_usuario,
                 u.correo_electronico,
                 u.activo,
-                COALESCE(ARRAY_AGG(r.nombre_rol ORDER BY r.nombre_rol)
-                         FILTER (WHERE r.nombre_rol IS NOT NULL), '{}') AS roles
+                COALESCE(
+                    ARRAY_AGG(r.nombre_rol ORDER BY r.nombre_rol)
+                    FILTER (WHERE r.nombre_rol IS NOT NULL),
+                    '{}'
+                ) AS roles
             FROM seguridad.usuarios u
             LEFT JOIN seguridad.usuario_rol ur ON ur.id_usuario = u.id_usuario
             LEFT JOIN seguridad.roles r ON r.id_rol = ur.id_rol
+            WHERE 1=1
+        """
+
+        params = []
+        if q:
+            base_sql += """
+                AND (
+                    u.nombre_usuario ILIKE %s
+                    OR u.correo_electronico ILIKE %s
+                    OR EXISTS (
+                        SELECT 1
+                        FROM seguridad.usuario_rol ur2
+                        JOIN seguridad.roles r2 ON r2.id_rol = ur2.id_rol
+                        WHERE ur2.id_usuario = u.id_usuario
+                          AND r2.nombre_rol ILIKE %s
+                    )
+                )
+            """
+            like_q = f"%{q}%"
+            params.extend([like_q, like_q, like_q])
+
+        base_sql += """
             GROUP BY u.id_usuario, u.nombre_usuario, u.correo_electronico, u.activo
             ORDER BY u.id_usuario;
-        """)
+        """
+
+        cur.execute(base_sql, params)
         usuarios = cur.fetchall()
+
         cur.close()
         conn.close()
     except Exception as e:
@@ -1377,12 +1409,14 @@ def admin_usuarios_list():
     return render_template(
         "admin/usuarios_list.html",
         user=user,
-        usuarios=usuarios
+        usuarios=usuarios,
+        modo=modo,
+        q=q
     )
 
 
 # =====================================
-# ADMIN – CREAR NUEVO USUARIO (DEMO)
+# ADMIN – CREAR NUEVO USUARIO (ALTA)
 # =====================================
 
 @app.route("/admin/usuarios/nuevo", methods=["GET", "POST"])
@@ -1396,7 +1430,7 @@ def admin_usuario_nuevo():
         conn = get_connection()
         cur = conn.cursor()
 
-        # Obtener roles disponibles
+        # Roles disponibles
         cur.execute("SELECT id_rol, nombre_rol FROM seguridad.roles ORDER BY nombre_rol;")
         roles = cur.fetchall()
 
@@ -1426,8 +1460,8 @@ def admin_usuario_nuevo():
                     """, (nuevo_id, id_rol))
 
                     conn.commit()
-                    flash("Usuario creado correctamente (demo, sin enlazar a alumno/personal).", "success")
-                    return redirect(url_for("admin_usuarios_list"))
+                    flash("Usuario creado correctamente.", "success")
+                    return redirect(url_for("admin_usuarios_list", modo="edit"))
                 except Exception as e_ins:
                     conn.rollback()
                     flash(f"Error al crear usuario: {e_ins}", "danger")
@@ -1447,7 +1481,7 @@ def admin_usuario_nuevo():
 
 
 # =====================================
-# ADMIN – EDITAR USUARIO (DEMO)
+# ADMIN – EDITAR USUARIO
 # =====================================
 
 @app.route("/admin/usuarios/<int:id_usuario>/editar", methods=["GET", "POST"])
@@ -1462,15 +1496,18 @@ def admin_usuario_editar(id_usuario):
         conn = get_connection()
         cur = conn.cursor()
 
-        # Usuario
+        # Usuario + roles actuales
         cur.execute("""
             SELECT
                 u.id_usuario,
                 u.nombre_usuario,
                 u.correo_electronico,
                 u.activo,
-                COALESCE(ARRAY_AGG(r.id_rol)
-                         FILTER (WHERE r.id_rol IS NOT NULL), '{}') AS roles_ids
+                COALESCE(
+                    ARRAY_AGG(r.id_rol)
+                    FILTER (WHERE r.id_rol IS NOT NULL),
+                    '{}'
+                ) AS roles_ids
             FROM seguridad.usuarios u
             LEFT JOIN seguridad.usuario_rol ur ON ur.id_usuario = u.id_usuario
             LEFT JOIN seguridad.roles r ON r.id_rol = ur.id_rol
@@ -1483,7 +1520,7 @@ def admin_usuario_editar(id_usuario):
             conn.close()
             abort(404)
 
-        # Roles
+        # Roles disponibles
         cur.execute("SELECT id_rol, nombre_rol FROM seguridad.roles ORDER BY nombre_rol;")
         roles = cur.fetchall()
 
@@ -1513,7 +1550,7 @@ def admin_usuario_editar(id_usuario):
 
                 conn.commit()
                 flash("Usuario actualizado.", "success")
-                return redirect(url_for("admin_usuarios_list"))
+                return redirect(url_for("admin_usuarios_list", modo="edit"))
 
             except Exception as e_upd:
                 conn.rollback()
@@ -1534,7 +1571,34 @@ def admin_usuario_editar(id_usuario):
 
 
 # =====================================
-# ADMIN – BLOCK / RESET PASSWORD (DEMO)
+# ADMIN – BAJA (eliminar usuario)
+# =====================================
+
+@app.route("/admin/usuarios/<int:id_usuario>/baja", methods=["POST"])
+@login_required
+@role_required("Administrador")
+def admin_usuario_baja(id_usuario):
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Primero borrar sus roles
+        cur.execute("DELETE FROM seguridad.usuario_rol WHERE id_usuario = %s;", (id_usuario,))
+        # Luego borrar usuario
+        cur.execute("DELETE FROM seguridad.usuarios WHERE id_usuario = %s;", (id_usuario,))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash("Usuario dado de baja (eliminado).", "info")
+    except Exception as e:
+        flash(f"Error al dar de baja al usuario: {e}", "danger")
+
+    return redirect(url_for("admin_usuarios_list", modo="baja"))
+
+
+# =====================================
+# ADMIN – BLOCK / UNBLOCK
 # =====================================
 
 @app.route("/admin/usuarios/<int:id_usuario>/block", methods=["POST"])
@@ -1544,15 +1608,33 @@ def admin_usuario_block(id_usuario):
     try:
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("UPDATE seguridad.usuarios SET activo = FALSE WHERE id_usuario = %s;", (id_usuario,))
+
+        # Alternar activo
+        cur.execute("""
+            UPDATE seguridad.usuarios
+            SET activo = NOT activo
+            WHERE id_usuario = %s
+            RETURNING activo;
+        """, (id_usuario,))
+        row = cur.fetchone()
         conn.commit()
         cur.close()
         conn.close()
-        flash("Usuario bloqueado.", "info")
-    except Exception as e:
-        flash(f"Error al bloquear usuario: {e}", "danger")
-    return redirect(url_for("admin_usuarios_list"))
 
+        if row and row["activo"]:
+            flash("Usuario desbloqueado.", "success")
+        else:
+            flash("Usuario bloqueado.", "warning")
+
+    except Exception as e:
+        flash(f"Error al bloquear/desbloquear usuario: {e}", "danger")
+
+    return redirect(url_for("admin_usuarios_list", modo="block"))
+
+
+# =====================================
+# ADMIN – RESET PASSWORD
+# =====================================
 
 @app.route("/admin/usuarios/<int:id_usuario>/reset", methods=["POST"])
 @login_required
@@ -1583,11 +1665,12 @@ def admin_usuario_reset(id_usuario):
                 f"Tu nueva contraseña temporal es: {nueva_pwd}"
             )
 
-        flash("Contraseña restablecida y enviada por correo (demo).", "success")
+        flash("Contraseña restablecida y enviada por correo (si SMTP está configurado).", "success")
     except Exception as e:
         flash(f"Error al restablecer contraseña: {e}", "danger")
 
-    return redirect(url_for("admin_usuarios_list"))
+    return redirect(url_for("admin_usuarios_list", modo="reset"))
+
 
 
 # =====================================

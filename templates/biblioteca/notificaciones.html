@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-3">Notificaciones de biblioteca</h2>
+
+    {% if notificaciones %}
+    <div class="table-responsive shadow-sm rounded bg-white">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Destinatario</th>
+                    <th>Mensaje</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in notificaciones %}
+                <tr>
+                    <td>{{ n.destinatario }}</td>
+                    <td>{{ n.mensaje }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-muted">No hay notificaciones pendientes.</p>
+    {% endif %}
+</div>
+{% endblock %}

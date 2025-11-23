@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">Catálogo de libros</h2>
+    </div>
+
+    {% if libros %}
+    <div class="table-responsive shadow-sm rounded bg-white">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Clasificación</th>
+                    <th>Editorial</th>
+                    <th>Año</th>
+                    <th>ISBN</th>
+                    <th>Cantidad</th>
+                    <th>Disponible</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in libros %}
+                <tr>
+                    <td>{{ l.id_libro }}</td>
+                    <td>{{ l.titulo_libro }}</td>
+                    <td>{{ l.codigo_clasificacion or '-' }}</td>
+                    <td>{{ l.nombre_editorial or '-' }}</td>
+                    <td>{{ l.anio_edicion or '-' }}</td>
+                    <td>{{ l.isbn or '-' }}</td>
+                    <td>{{ l.cantidad }}</td>
+                    <td>{{ l.cantidad_disponible }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-muted">No hay libros registrados en el catálogo.</p>
+    {% endif %}
+</div>
+{% endblock %}

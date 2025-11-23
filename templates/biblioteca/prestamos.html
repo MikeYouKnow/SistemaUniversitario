@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-3">Préstamos activos</h2>
+
+    {% if prestamos %}
+    <div class="table-responsive shadow-sm rounded bg-white">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Título</th>
+                    <th>Alumno</th>
+                    <th>Personal</th>
+                    <th>Fecha préstamo</th>
+                    <th>Fecha límite</th>
+                    <th>Estado</th>
+                    <th style="width: 160px;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in prestamos %}
+                <tr>
+                    <td>{{ p.id_prestamo }}</td>
+                    <td>{{ p.titulo_libro }}</td>
+                    <td>{{ p.fk_alumno or '-' }}</td>
+                    <td>{{ p.fk_personal or '-' }}</td>
+                    <td>{{ p.fecha_prestamo }}</td>
+                    <td>{{ p.fecha_devolucion_estimada }}</td>
+                    <td>{{ p.estado }}</td>
+                    <td>
+                        <form method="post" action="{{ url_for('bib_prestamos') }}">
+                            <input type="hidden" name="id_prestamo" value="{{ p.id_prestamo }}">
+                            <button type="submit"
+                                    class="btn btn-sm btn-outline-success"
+                                    onclick="return confirm('¿Marcar como devuelto?');">
+                                Marcar devuelto
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="text-muted">No hay préstamos activos.</p>
+    {% endif %}
+</div>
+{% endblock %}
