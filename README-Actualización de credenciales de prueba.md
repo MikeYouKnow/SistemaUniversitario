@@ -3,6 +3,11 @@ Actualización de credenciales
 Usuario: admin1
 Contraseña: Admin123*
 
+Coordinador 2
+Usuario: coord2
+Contraseña: Coord123*
+
+
 👨‍🏫 Docentes
 Docente 1
 Usuario: doc1
