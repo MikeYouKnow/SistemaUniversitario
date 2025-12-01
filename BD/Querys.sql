@@ -1,3 +1,19 @@
+-- =========================================
+-- Esta se ejecuta primero y aparte
+-- =========================================
+
+CREATE USER backend_app WITH PASSWORD 'Backend123';
+
+GRANT CONNECT ON DATABASE "DB_universidad" TO backend_app;
+GRANT USAGE ON SCHEMA seguridad, academico, planes, infraestructura, biblioteca, rrhh TO backend_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA seguridad, academico, planes, infraestructura, biblioteca, rrhh TO backend_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA seguridad, academico, planes, infraestructura, biblioteca, rrhh TO backend_app;
+
+
+
+
+
+
 BEGIN;
 
 -- =========================================
