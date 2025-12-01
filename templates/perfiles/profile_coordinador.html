@@ -36,8 +36,8 @@
           </p>
           <hr>
           <p class="small text-muted mb-0">
-            Como coordinador podrás revisar grupos, cargas académicas y
-            asignación de aulas cuando el módulo esté completo.
+            Desde este panel puedes revisar grupos, cargas académicas
+            y dar seguimiento a la asignación de espacios.
           </p>
         </div>
       </div>
@@ -49,15 +49,15 @@
         </div>
         <div class="card-body">
           <div class="d-grid gap-2">
-            <a href="{{ url_for('est_perfil_aulas') }}" class="btn btn-primary btn-sm">
-              Ver aulas (vista estudiante)
+            <!-- Quitamos la vista de aulas de estudiante para evitar error de permisos -->
+            <a href="{{ url_for('coord_asignacion_espacios') }}"
+               class="btn btn-primary btn-sm">
+              Asignación de espacios
             </a>
-            <button class="btn btn-outline-primary btn-sm" disabled>
-              Asignación de espacios (demo)
-            </button>
-            <button class="btn btn-outline-secondary btn-sm" disabled>
-              Reportes académicos (demo)
-            </button>
+            <a href="{{ url_for('coord_reportes_academicos') }}"
+               class="btn btn-outline-secondary btn-sm">
+              Reportes académicos
+            </a>
           </div>
         </div>
       </div>
@@ -69,48 +69,47 @@
       <!-- Tarjeta: Resumen académico -->
       <div class="card shadow-sm mb-4">
         <div class="card-header bg-secondary text-white d-flex justify-content-between">
-          <span><strong>Resumen académico (demo)</strong></span>
-          <span class="small">Datos de prueba</span>
+          <span><strong>Resumen académico</strong></span>
+          <span class="small">Ciclo {{ resumen.ciclo_actual }}</span>
         </div>
         <div class="card-body">
           <div class="row text-center">
             <div class="col-6 col-md-3 mb-3">
-              <h4 class="mb-0">1</h4>
-              <span class="text-muted small">Carrera activa</span>
+              <h4 class="mb-0">{{ resumen.carreras_activas }}</h4>
+              <span class="text-muted small">Carreras activas</span>
             </div>
             <div class="col-6 col-md-3 mb-3">
-              <h4 class="mb-0">4</h4>
-              <span class="text-muted small">Materias demo</span>
+              <h4 class="mb-0">{{ resumen.materias_en_plan }}</h4>
+              <span class="text-muted small">Materias en plan</span>
             </div>
             <div class="col-6 col-md-3 mb-3">
-              <h4 class="mb-0">2</h4>
-              <span class="text-muted small">Docentes demo</span>
+              <h4 class="mb-0">{{ resumen.docentes }}</h4>
+              <span class="text-muted small">Docentes</span>
             </div>
             <div class="col-6 col-md-3 mb-3">
-              <h4 class="mb-0">2</h4>
-              <span class="text-muted small">Alumnos demo</span>
+              <h4 class="mb-0">{{ resumen.alumnos }}</h4>
+              <span class="text-muted small">Alumnos</span>
             </div>
           </div>
           <hr>
           <p class="small text-muted mb-0">
-            Este resumen está basado en los datos de ejemplo cargados en
-            <code>planes.carrera</code>, <code>planes.materia</code>,
-            <code>rrhh.personal</code> y <code>academico.alumnos</code>.
-            Cuando se implemente el módulo completo, aquí podrás ver datos
-            reales por ciclo escolar.
+            La información se toma directamente de las tablas
+            <code>planes</code>, <code>rrhh</code> y <code>academico</code>.
+            Cuando el módulo esté completo, aquí podrás ver la carga
+            académica por ciclo y carrera.
           </p>
         </div>
       </div>
 
-      <!-- Tarjeta: Grupos / Materias (diseño similar a estudiante) -->
+      <!-- Tarjeta: Grupos / Materias -->
       <div class="card shadow-sm">
         <div class="card-header bg-light d-flex justify-content-between align-items-center">
-          <strong>Grupos y materias (demo)</strong>
-          <span class="small text-muted">Ciclo 2025-1</span>
+          <strong>Grupos y materias</strong>
+          <span class="small text-muted">Ciclo {{ resumen.ciclo_actual }}</span>
         </div>
         <div class="card-body">
 
-          <!-- Tabla demo de materias-alta -->
+          <!-- Tabla de materias_alta en el ciclo actual -->
           <div class="table-responsive mb-3">
             <table class="table table-sm align-middle">
               <thead class="table-light">
@@ -123,47 +122,47 @@
                 </tr>
               </thead>
               <tbody>
+              {% if materias %}
+                {% for m in materias %}
                 <tr>
-                  <td>PROG1</td>
-                  <td>Programación I</td>
-                  <td>1</td>
-                  <td>Juan Pérez Lozano</td>
+                  <td>{{ m.materia_clave }}</td>
+                  <td>{{ m.materia_nombre }}</td>
+                  <td>{{ m.semestre }}</td>
+                  <td>{{ m.docente_nombre }}</td>
                   <td class="text-center">
-                    <span class="badge bg-success">Activa</span>
+                    {% if m.esta_activo %}
+                      <span class="badge bg-success">Activa</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Inactiva</span>
+                    {% endif %}
                   </td>
                 </tr>
+                {% endfor %}
+              {% else %}
                 <tr>
-                  <td>BD1</td>
-                  <td>Taller de Bases de Datos</td>
-                  <td>4</td>
-                  <td>María Gómez Ríos</td>
-                  <td class="text-center">
-                    <span class="badge bg-success">Activa</span>
+                  <td colspan="5" class="text-center text-muted small">
+                    No hay materias activas registradas para este ciclo.
                   </td>
                 </tr>
+              {% endif %}
               </tbody>
             </table>
           </div>
 
-          <!-- Bloque de texto -->
-          <p class="small text-muted mb-2">
-            Más adelante, esta sección se llenará con una consulta real a
-            <code>planes.materia_alta</code>, enlazando docentes, grupos
-            y horarios para que el coordinador pueda validar la carga académica
-            y la asignación de espacios.
-          </p>
-
-          <!-- "Botones" de acciones futuras -->
+          <!-- Botones de acciones futuras -->
           <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-outline-primary btn-sm disabled">
+            <a href="{{ url_for('coord_asignacion_espacios') }}"
+               class="btn btn-outline-primary btn-sm">
               Ver detalle del grupo
-            </button>
-            <button class="btn btn-outline-secondary btn-sm disabled">
+            </a>
+            <a href="{{ url_for('coord_asignacion_espacios') }}"
+               class="btn btn-outline-secondary btn-sm">
               Ajustar carga académica
-            </button>
-            <button class="btn btn-outline-secondary btn-sm disabled">
+            </a>
+            <a href="{{ url_for('coord_reportes_academicos') }}"
+               class="btn btn-outline-secondary btn-sm">
               Exportar reporte (PDF)
-            </button>
+            </a>
           </div>
 
         </div>

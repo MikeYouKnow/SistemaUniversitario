@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Parámetros globales{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Parámetros globales</h4>
+  <a href="{{ url_for('perfil_administrador') }}" class="btn btn-outline-secondary btn-sm">
+    ← Volver al panel
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-lg-7 mb-3">
+    <div class="card">
+      <div class="card-header">
+        Periodos / ciclos activos
+      </div>
+      <div class="card-body p-0">
+        <div class="small text-muted px-3 pt-2">
+          Información obtenida desde <code>planes.materia_alta</code>.
+        </div>
+        <table class="table mb-0 table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Ciclo</th>
+              <th class="text-center">Grupos registrados</th>
+              <th class="text-center">Semestre mín.</th>
+              <th class="text-center">Semestre máx.</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% if periodos %}
+            {% for p in periodos %}
+              <tr>
+                <td>{{ p.ciclo }}</td>
+                <td class="text-center">{{ p.grupos }}</td>
+                <td class="text-center">{{ p.min_semestre }}</td>
+                <td class="text-center">{{ p.max_semestre }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" class="text-center text-muted py-3">
+                No se encontraron periodos en la BD.
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5 mb-3">
+    <div class="card h-100">
+      <div class="card-header">
+        Límites de créditos
+      </div>
+      <div class="card-body">
+        <p class="text-muted small">
+          Valores que usa el módulo de inscripciones para validar carga normal,
+          sobrecarga y número máximo de materias reprobadas. Se guardan en
+          <code>academico.parametros_globales</code>.
+        </p>
+
+        <form method="post" class="row g-2">
+          <div class="col-12">
+            <label class="form-label form-label-sm mb-0">Créditos máximos estándar</label>
+            <input
+              type="number"
+              min="1"
+              name="creditos_normales"
+              class="form-control form-control-sm text-end"
+              value="{{ creditos_maximos.normal }}"
+              required
+            >
+          </div>
+
+          <div class="col-12">
+            <label class="form-label form-label-sm mb-0">Créditos máximos con sobrecarga</label>
+            <input
+              type="number"
+              min="1"
+              name="creditos_sobrecarga"
+              class="form-control form-control-sm text-end"
+              value="{{ creditos_maximos.sobrecarga }}"
+              required
+            >
+          </div>
+
+          <div class="col-12">
+            <label class="form-label form-label-sm mb-0">Límite de materias reprobadas</label>
+            <input
+              type="number"
+              min="0"
+              name="max_reprobadas"
+              class="form-control form-control-sm text-end"
+              value="{{ creditos_maximos.max_reprobadas }}"
+              required
+            >
+          </div>
+
+          <div class="col-12 text-end mt-2">
+            <button type="submit" class="btn btn-primary btn-sm">
+              Guardar cambios
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

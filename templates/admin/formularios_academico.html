@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Formularios y académico{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Formularios y académico</h4>
+  <a href="{{ url_for('perfil_administrador') }}" class="btn btn-outline-secondary btn-sm">
+    ← Volver al panel
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Catálogo de formularios institucionales</span>
+    <form method="post" action="{{ url_for('admin_formulario_nuevo') }}" class="m-0 p-0">
+      <button type="submit" class="btn btn-primary btn-sm">
+        Diseñar nuevo
+      </button>
+    </form>
+  </div>
+
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Nombre</th>
+          <th>Tipo</th>
+          <th>Versión</th>
+          <th>Descripción</th>
+          <th class="text-center">Estatus</th>
+          <th class="text-center">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% if formularios %}
+        {% for f in formularios %}
+          <tr>
+            <td>{{ f.nombre }}</td>
+            <td>{{ f.tipo }}</td>
+            <td>{{ f.version }}</td>
+            <td>{{ f.descripcion or "-" }}</td>
+            <td class="text-center">
+              <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">
+                Inactivo
+              </span>
+            </td>
+            <td class="text-center">
+              <a href="{{ url_for('admin_formulario_disenar', id_formulario=f.id_formulario) }}"
+                 class="btn btn-outline-primary btn-sm">
+                Diseñar
+              </a>
+
+              <button class="btn btn-outline-secondary btn-sm" type="button" disabled>
+                Historial
+              </button>
+
+              <form method="post"
+                    action="{{ url_for('admin_formulario_eliminar', id_formulario=f.id_formulario) }}"
+                    class="d-inline">
+                <button type="submit"
+                        class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('¿Seguro que deseas eliminar este formulario?');">
+                  Eliminar
+                </button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-3">
+            No hay formularios institucionales registrados.
+          </td>
+        </tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

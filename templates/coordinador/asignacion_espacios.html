@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-0">Asignación de espacios</h2>
+      <p class="text-muted mb-0">
+        Ciclo {{ ciclo }} &middot; Vista del coordinador
+      </p>
+    </div>
+    <a href="{{ url_for('perfil_coordinador') }}" class="btn btn-outline-secondary btn-sm">
+      Volver al panel
+    </a>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header bg-light">
+      <strong>Horarios y aulas asignadas</strong>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Semestre</th>
+              <th>Materia</th>
+              <th>Docente</th>
+              <th>Aula</th>
+              <th>Día</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% if filas %}
+            {% for f in filas %}
+            <tr>
+              <td>{{ f.semestre }}</td>
+              <td>{{ f.materia_clave }} - {{ f.materia_nombre }}</td>
+              <td>{{ f.docente_nombre }}</td>
+              <td>Edif. {{ f.edificio_numero }} / {{ f.aula_clave }}</td>
+              <td>{{ f.dia_semana }}</td>
+              <td>{{ f.hora_inicio }}</td>
+              <td>{{ f.hora_fin }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center text-muted small">
+                No hay horarios registrados para este ciclo.
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="small text-muted mt-3 mb-0">
+        Más adelante aquí se podrán editar las aulas y horarios
+        (insertar/actualizar en <code>infraestructura.horario_asignacion</code>).
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

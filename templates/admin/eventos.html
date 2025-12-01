@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Consola de eventos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Consola de eventos</h4>
+  <a href="{{ url_for('perfil_administrador') }}" class="btn btn-outline-secondary btn-sm">
+    ← Volver al panel
+  </a>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-header bg-white d-flex justify-content-between align-items-center">
+    <span><strong>Últimos intentos de inicio de sesión</strong></span>
+    <span class="text-muted small">Fuente: <code>seguridad.intentos_login</code></span>
+  </div>
+  <div class="card-body p-0">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>Fecha / hora</th>
+          <th>Usuario</th>
+          <th>Identificador</th>
+          <th>IP</th>
+          <th>Agente</th>
+          <th class="text-center">Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for e in eventos %}
+        <tr>
+          <td class="small text-muted">
+            {{ e.intentado_en }}
+          </td>
+          <td>{{ e.nombre_usuario or 'Desconocido' }}</td>
+          <td>{{ e.identificador }}</td>
+          <td class="small">{{ e.direccion_ip or '—' }}</td>
+          <td class="small text-truncate" style="max-width: 260px;">
+            {{ e.agente_usuario or '—' }}
+          </td>
+          <td class="text-center">
+            {% if e.exitoso %}
+              <span class="badge bg-success-subtle text-success">Éxito</span>
+            {% else %}
+              <span class="badge bg-danger-subtle text-danger">Fallido</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      {% if not eventos %}
+        <tr>
+          <td colspan="6" class="text-center text-muted py-3">
+            Aún no hay eventos registrados.
+          </td>
+        </tr>
+      {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

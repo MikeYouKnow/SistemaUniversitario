@@ -1,73 +1,265 @@
+{# templates/perfiles/profile_docente.html #}
 {% extends "base.html" %}
-{% block title %}Panel Docente{% endblock %}
+{% block title %}Panel del Docente{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-  <h2 class="mb-3">Panel del Docente</h2>
-  <p class="text-muted">Bienvenido, {{ user.nombre_usuario if user else "" }}</p>
+<style>
+  /* ===== Estilos sólo para el panel del docente ===== */
 
-  <div class="row g-3">
+  .docente-header-avatar {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 0.5rem auto;
+    font-size: 2rem;
+    font-weight: 600;
+    color: #ffffff;
+    background: radial-gradient(circle at 30% 20%, #93c5fd, #1d4ed8);
+    box-shadow: 0 10px 30px rgba(37, 99, 235, 0.35);
+  }
 
-    <!-- Grupos y materias -->
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <h5 class="card-title">Grupos y materias</h5>
-          <p class="card-text">
-            Consulta las materias que impartes, el ciclo, carrera, semestre y número de alumnos inscritos.
+  .docente-header-subtitle {
+    font-size: 0.9rem;
+    color: #6b7280; /* gris suave */
+  }
+
+  .docente-summary-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #6b7280;
+  }
+
+  /* Tarjetas de módulos de abajo */
+  .docente-mod-card {
+    border-radius: 18px;
+    padding: 1rem 1.1rem 1.1rem;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .docente-mod-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+  }
+
+  .docente-mod-card--grupos { background: #eef2ff; }   /* Indigo muy claro   */
+  .docente-mod-card--eval   { background: #ecfdf3; }   /* Verde muy claro    */
+  .docente-mod-card--asis   { background: #fefce8; }   /* Amarillo muy claro */
+  .docente-mod-card--com    { background: #eff6ff; }   /* Azul cielo claro   */
+
+  .docente-mod-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .docente-mod-text {
+    font-size: 0.83rem;
+    margin-bottom: 0;
+  }
+</style>
+
+<div class="container mt-4 page-wrapper">
+
+  {# ===== Encabezado con círculo de iniciales ===== #}
+  <div class="text-center mb-4">
+    <div class="docente-header-avatar">
+      {# Primeras 2 letras del nombre de usuario, o DO por defecto #}
+      {{ (user.nombre_usuario[0:2] | upper) if user and user.nombre_usuario else 'DO' }}
+    </div>
+    <div class="mb-1">
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+        Docente
+      </span>
+    </div>
+    <h2 class="mb-1">Panel del docente</h2>
+    <p class="docente-header-subtitle mb-0">
+      Bienvenido, <strong>{{ user.nombre_usuario if user else 'docente' }}</strong>.  
+      Desde aquí puedes revisar tu carga académica, grupos, evaluaciones y avisos.
+    </p>
+  </div>
+
+  {# ===== Resumen rápido: materias, grupos, alumnos ===== #}
+  <div class="row g-3 mb-3">
+    <div class="col-md-4">
+      <div class="card-soft h-100">
+        <div class="card-soft-header">
+          <span class="docente-summary-label">Materias</span>
+        </div>
+        <div class="card-soft-body">
+          <h3 class="mb-0">
+            {{ resumen.total_materias if resumen and resumen.total_materias is not none else 0 }}
+          </h3>
+          <p class="text-muted-soft mb-0 small">
+            Materias distintas asignadas en tus grupos actuales.
           </p>
-          <a href="{{ url_for('docente_grupos_materias') }}" class="badge bg-primary text-decoration-none">
-            Ver grupos
-          </a>
         </div>
       </div>
     </div>
 
-    <!-- Evaluaciones -->
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100">
-        <div class="card-body">
-          <h5 class="card-title">Evaluación y calificaciones</h5>
-          <p class="card-text">
-            Registra o actualiza las calificaciones de tus alumnos por materia.
+    <div class="col-md-4">
+      <div class="card-soft h-100">
+        <div class="card-soft-header">
+          <span class="docente-summary-label">Grupos</span>
+        </div>
+        <div class="card-soft-body">
+          <h3 class="mb-0">
+            {{ resumen.total_grupos if resumen and resumen.total_grupos is not none else 0 }}
+          </h3>
+          <p class="text-muted-soft mb-0 small">
+            Grupos activos en los ciclos actuales.
           </p>
-          <a href="{{ url_for('docente_evaluaciones') }}" class="badge bg-success text-decoration-none">
-            Calificar
-          </a>
         </div>
       </div>
     </div>
 
-    <!-- Asistencias -->
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100 mt-3">
-        <div class="card-body">
-          <h5 class="card-title">Control de asistencias</h5>
-          <p class="card-text">
-            Visualiza la lista de alumnos por grupo. (Por ahora solo listado, sin guardar asistencia).
+    <div class="col-md-4">
+      <div class="card-soft h-100">
+        <div class="card-soft-header">
+          <span class="docente-summary-label">Alumnos</span>
+        </div>
+        <div class="card-soft-body">
+          <h3 class="mb-0">
+            {{ resumen.total_alumnos if resumen and resumen.total_alumnos is not none else 0 }}
+          </h3>
+          <p class="text-muted-soft mb-0 small">
+            Alumnos distintos inscritos contigo en este momento.
           </p>
-          <a href="{{ url_for('docente_asistencias') }}" class="badge bg-warning text-dark text-decoration-none">
-            Tomar asistencia
-          </a>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Comunicación -->
-    <div class="col-md-6">
-      <div class="card shadow-sm h-100 mt-3">
-        <div class="card-body">
-          <h5 class="card-title">Comunicación</h5>
-          <p class="card-text">
-            Consulta avisos generales para tus grupos (vista demo, se puede conectar a tabla después).
+  {# ===== Resumen por ciclo ===== #}
+  <div class="card-soft mb-4">
+    <div class="card-soft-header d-flex justify-content-between align-items-center">
+      <span class="section-title">Resumen por ciclo</span>
+      <span class="text-muted-soft small">Vista rápida de tu carga académica</span>
+    </div>
+    <div class="card-soft-body">
+      {% if resumen_ciclo and resumen_ciclo|length > 0 %}
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Ciclo</th>
+                <th>Materias</th>
+                <th>Grupos</th>
+                <th>Alumnos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in resumen_ciclo %}
+              <tr>
+                <td>{{ r.ciclo }}</td>
+                <td>{{ r.materias }}</td>
+                <td>{{ r.grupos }}</td>
+                <td>{{ r.alumnos }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted-soft mb-0">
+          Aún no tienes grupos asignados en ningún ciclo.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+{# Módulos del docente #}
+<div class="mt-4">
+  <span class="section-title text-uppercase small text-muted-soft">
+    Módulos del docente
+  </span>
+</div>
+
+<div class="row g-3 mt-2">
+
+  <!-- Grupos y materias -->
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('docente_grupos_materias') }}"
+       class="text-decoration-none text-reset">
+      <div class="card-soft h-100"
+           style="background: #f5fbff;">
+        <div class="card-soft-header">
+          <span class="section-title">Grupos y materias</span>
+        </div>
+        <div class="card-soft-body">
+          <p class="text-muted-soft mb-0">
+            Consulta las materias que impartes, ciclo,
+            carrera y número de alumnos inscritos.
           </p>
-          <a href="{{ url_for('docente_comunicacion') }}" class="badge bg-info text-dark text-decoration-none">
-            Ver avisos
-          </a>
         </div>
       </div>
-    </div>
+    </a>
+  </div>
+
+  <!-- Evaluaciones -->
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('docente_evaluaciones') }}"
+       class="text-decoration-none text-reset">
+      <div class="card-soft h-100"
+           style="background: #f3fff5;">
+        <div class="card-soft-header">
+          <span class="section-title">Evaluaciones</span>
+        </div>
+        <div class="card-soft-body">
+          <p class="text-muted-soft mb-0">
+            Registra y actualiza las calificaciones
+            de tus alumnos por materia y grupo.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Asistencias -->
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('docente_asistencias') }}"
+       class="text-decoration-none text-reset">
+      <div class="card-soft h-100"
+           style="background: #fff9e9;">
+        <div class="card-soft-header">
+          <span class="section-title">Asistencias</span>
+        </div>
+        <div class="card-soft-body">
+          <p class="text-muted-soft mb-0">
+            Visualiza la lista de alumnos por grupo
+            como base para el control de asistencia.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Comunicación -->
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('docente_comunicacion') }}"
+       class="text-decoration-none text-reset">
+      <div class="card-soft h-100"
+           style="background: #f3f8ff;">
+        <div class="card-soft-header">
+          <span class="section-title">Comunicación</span>
+        </div>
+        <div class="card-soft-body">
+          <p class="text-muted-soft mb-0">
+            Revisa los avisos y mensajes generales
+            relacionados con tus grupos.
+          </p>
+        </div>
+      </div>
+    </a>
+  </div>
+
+</div>
+
 
   </div>
+
 </div>
 {% endblock %}

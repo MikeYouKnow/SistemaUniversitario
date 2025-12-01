@@ -5,7 +5,7 @@
 <div class="container mt-4">
   <h2>Comunicación y avisos</h2>
   <p class="text-muted">
-    Esta sección muestra avisos generales para tus grupos. Más adelante se puede conectar a una tabla en la BD.
+    Esta sección muestra los avisos registrados para tus grupos.
   </p>
 
   {% if avisos %}
@@ -13,16 +13,21 @@
       {% for a in avisos %}
       <div class="list-group-item">
         <h5 class="mb-1">{{ a.titulo }}</h5>
-        <p class="mb-1">{{ a.mensaje }}</p>
+        <div class="small text-muted mb-1">
+          {{ a.ciclo }} · {{ a.materia_clave }} - {{ a.materia_nombre }} · {{ a.creado_en }}
+        </div>
+        <p class="mb-0">{{ a.mensaje }}</p>
       </div>
       {% endfor %}
     </div>
   {% else %}
     <div class="alert alert-info mt-3">
-      No hay avisos registrados.
+      No hay avisos registrados para tus materias.
     </div>
   {% endif %}
 
-  <a href="{{ url_for('perfil_docente') }}" class="btn btn-secondary mt-3">Volver al panel del docente</a>
+  <a href="{{ url_for('perfil_docente') }}" class="btn btn-secondary mt-3">
+    Volver al panel del docente
+  </a>
 </div>
 {% endblock %}

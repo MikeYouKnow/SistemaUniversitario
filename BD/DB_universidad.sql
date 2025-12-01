@@ -407,7 +407,6 @@ CREATE TABLE IF NOT EXISTS academico.alumno_inscripcion (
     CONSTRAINT uq_alumno_materia_ciclo UNIQUE (fk_alumno, fk_materia_alta)
 );
 
-
 -- ======================================
 -- 4) VISTAS, FUNCIONES Y TRIGGERS
 -- ======================================
@@ -620,3 +619,80 @@ CREATE INDEX IF NOT EXISTS ix_auth_session_user ON seguridad.sesiones (id_usuari
 
 
 COMMIT;
+
+
+
+
+CREATE TABLE IF NOT EXISTS academico.avisos_docente (
+    aviso_id        SERIAL PRIMARY KEY,
+    fk_materia_alta INT REFERENCES planes.materia_alta(materia_alta_id) ON DELETE CASCADE,
+    titulo          VARCHAR(200) NOT NULL,
+    mensaje         TEXT NOT NULL,
+    creado_en       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ======================================
+-- 3.x) TABLA DE EVENTOS DE SEGURIDAD (NUEVA)
+-- ======================================
+CREATE TABLE IF NOT EXISTS seguridad.eventos (
+  id_evento   BIGSERIAL PRIMARY KEY,
+  fecha       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  tipo        VARCHAR(50) NOT NULL,          -- p.ej. 'login', 'bloqueo', 'alta_usuario'
+  usuario_id  BIGINT REFERENCES seguridad.usuarios(id_usuario) ON DELETE SET NULL,
+  descripcion TEXT,
+  datos       JSONB                           -- info extra opcional
+);
+
+CREATE INDEX IF NOT EXISTS idx_eventos_fecha ON seguridad.eventos(fecha DESC);
+CREATE INDEX IF NOT EXISTS idx_eventos_tipo  ON seguridad.eventos(tipo);
+CREATE INDEX IF NOT EXISTS idx_eventos_usuario ON seguridad.eventos(usuario_id);
+
+-- ======================================
+-- 3.y) TABLAS PARA PARÁMETROS Y FORMULARIOS (NUEVAS)
+-- ======================================
+
+-- Parámetros globales del módulo académico
+CREATE TABLE IF NOT EXISTS academico.parametros_globales (
+  id_parametro  SERIAL PRIMARY KEY,
+  clave         VARCHAR(80) NOT NULL UNIQUE,    -- p.ej. 'ciclo_activo'
+  valor_texto   VARCHAR(255),
+  descripcion   TEXT,
+  categoria     VARCHAR(50) DEFAULT 'general',
+  actualizado_en TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE OR REPLACE FUNCTION academico.fn_parametros_globales_touch()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  NEW.actualizado_en := NOW();
+  RETURN NEW;
+END$$;
+
+DROP TRIGGER IF EXISTS tg_parametros_globales_actualizado ON academico.parametros_globales;
+CREATE TRIGGER tg_parametros_globales_actualizado
+BEFORE UPDATE ON academico.parametros_globales
+FOR EACH ROW EXECUTE FUNCTION academico.fn_parametros_globales_touch();
+
+-- Formularios institucionales (para el módulo "Formularios y académico")
+CREATE TABLE IF NOT EXISTS academico.formularios_institucionales (
+  id_formulario SERIAL PRIMARY KEY,
+  nombre        VARCHAR(200) NOT NULL,
+  tipo          VARCHAR(40)  NOT NULL,         -- 'Alumno', 'Administrativo', etc.
+  version       NUMERIC(3,1) NOT NULL DEFAULT 1.0,
+  descripcion   TEXT,
+  CONSTRAINT uq_form_nombre_version UNIQUE (nombre, version)
+);
+
+-- ======================================
+-- 4.x) VISTA PARA RESUMEN DE ROLES Y ESTADO (NUEVA)
+-- ======================================
+CREATE OR REPLACE VIEW seguridad.vw_resumen_roles_estados AS
+SELECT
+  COALESCE(r.nombre_rol, 'Sin rol') AS rol,
+  CASE WHEN u.activo THEN 'Activo' ELSE 'Bloqueado' END AS estado,
+  COUNT(*) AS cantidad
+FROM seguridad.usuarios u
+LEFT JOIN seguridad.usuario_rol ur ON ur.id_usuario = u.id_usuario
+LEFT JOIN seguridad.roles r        ON r.id_rol     = ur.id_rol
+GROUP BY rol, estado
+ORDER BY rol, estado;

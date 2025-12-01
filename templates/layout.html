@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>
+        {% block title %}Sistema Universitario{% endblock %}
+    </title>
+
+    <!-- CSS principal -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header>
+        <!-- Barra superior simple, puedes ajustarla si ya tenías otra -->
+        <nav class="navbar">
+            <div class="navbar-left">
+                <a href="{{ url_for('perfil_administrador') }}">Centro educativo</a>
+            </div>
+            <div class="navbar-right">
+                {% if user %}
+                    <span>{{ user.nombre_usuario }}</span>
+                    <a href="{{ url_for('logout') }}">Cerrar sesión</a>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mt-4 mb-4">
+        {# mensajes flash #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

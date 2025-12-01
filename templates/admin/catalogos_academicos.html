@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block title %}Catálogos académicos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">
+    Catálogos académicos
+    {% if accion == "agregar" %}
+      – Agregar relación
+    {% elif accion == "editar" %}
+      – Editar relación
+    {% endif %}
+  </h4>
+  <a href="{{ url_for('perfil_administrador') }}" class="btn btn-outline-secondary btn-sm">
+    ← Volver al panel
+  </a>
+</div>
+
+<div class="row">
+  <!-- Carreras -->
+  <div class="col-lg-4 mb-3">
+    <div class="card h-100">
+      <div class="card-header">Carreras</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Clave</th>
+              <th>Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% if carreras %}
+            {% for c in carreras %}
+              <tr>
+                <td>{{ c.clave }}</td>
+                <td>{{ c.nombre }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="2" class="text-center text-muted py-3">
+                No hay carreras registradas.
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Materias -->
+  <div class="col-lg-4 mb-3">
+    <div class="card h-100">
+      <div class="card-header">Materias</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Clave</th>
+              <th>Nombre</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% if materias %}
+            {% for m in materias %}
+              <tr>
+                <td>{{ m.clave }}</td>
+                <td>{{ m.nombre }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="2" class="text-center text-muted py-3">
+                No hay materias registradas.
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Relación carrera–materia -->
+  <div class="col-lg-4 mb-3">
+    <div class="card h-100">
+      <div class="card-header">Plan de estudios (carrera–materia)</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Carrera</th>
+              <th>Materia</th>
+              <th class="text-center">Sem.</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% if carreras_materias %}
+            {% for r in carreras_materias %}
+              <tr>
+                <td>{{ r.carrera_clave }} – {{ r.carrera_nombre }}</td>
+                <td>{{ r.materia_clave }} – {{ r.materia_nombre }}</td>
+                <td class="text-center">{{ r.semestre }}</td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="3" class="text-center text-muted py-3">
+                No hay relaciones carrera–materia registradas.
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Zona CRUD de relación carrera-materia -->
+<div class="card mt-3">
+  <div class="card-header">
+    {% if accion == "agregar" %}
+      Agregar relación carrera–materia
+    {% elif accion == "editar" %}
+      Editar / actualizar relación
+    {% else %}
+      Gestión de plan de estudios
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">
+      Esta sección sirve para dar de alta o actualizar la relación entre carrera y
+      materia (plan de estudios). Si la combinación ya existe, se actualiza el semestre;
+      si no existe, se crea. También puedes eliminar una relación existente.
+    </p>
+
+    <form method="post" class="row g-2 align-items-end mb-3">
+      <input type="hidden" name="form_accion" value="guardar_relacion">
+
+      <div class="col-md-4">
+        <label class="form-label">Carrera</label>
+        <select name="carrera_id" class="form-select" required>
+          <option value="">Seleccionar…</option>
+          {% for c in carreras %}
+            <option value="{{ c.carrera_id }}">{{ c.clave }} – {{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">Materia</label>
+        <select name="materia_id" class="form-select" required>
+          <option value="">Seleccionar…</option>
+          {% for m in materias %}
+            <option value="{{ m.materia_id }}">{{ m.clave }} – {{ m.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-2">
+        <label class="form-label">Semestre</label>
+        <input
+          type="number"
+          min="1"
+          max="12"
+          name="semestre"
+          class="form-control"
+          required
+        >
+      </div>
+
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">
+          Guardar
+        </button>
+      </div>
+    </form>
+
+    <hr>
+
+    <form method="post" class="row g-2 align-items-end">
+      <input type="hidden" name="form_accion" value="eliminar_relacion">
+
+      <div class="col-md-8">
+        <label class="form-label">Eliminar relación</label>
+        <select name="carrera_materia_id" class="form-select" required>
+          <option value="">Selecciona una relación…</option>
+          {% for r in carreras_materias %}
+            <option value="{{ r.carrera_materia_id }}">
+              {{ r.carrera_clave }} – {{ r.carrera_nombre }} /
+              {{ r.materia_clave }} – {{ r.materia_nombre }} (Sem {{ r.semestre }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-outline-danger w-100">
+          Eliminar relación
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

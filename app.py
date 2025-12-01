@@ -69,7 +69,7 @@ def login_required(view_func):
 
 
 def role_required(*roles_permitidos):
-    """Opcional: protege rutas por rol actual."""
+    """Protege rutas por rol actual."""
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(*args, **kwargs):
@@ -209,6 +209,7 @@ def logout():
     flash("Sesión cerrada.", "info")
     return redirect(url_for("login"))
 
+
 @app.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
     # Mostrar el formulario
@@ -319,25 +320,7 @@ def perfil_administrador():
     return render_template("perfiles/profile_admin.html", user=current_user())
 
 
-@app.route("/perfil/bibliotecario")
-@login_required
-@role_required("Bibliotecario")
-def perfil_bibliotecario():
-    return render_template("perfiles/profile_bibliotecario.html", user=current_user())
 
-
-@app.route("/perfil/coordinador")
-@login_required
-@role_required("Coordinador")
-def perfil_coordinador():
-    return render_template("perfiles/profile_coordinador.html", user=current_user())
-
-
-@app.route("/perfil/docente")
-@login_required
-@role_required("Docente")
-def perfil_docente():
-    return render_template("perfiles/profile_docente.html", user=current_user())
 
 
 @app.route("/perfil/estudiante")
@@ -474,7 +457,7 @@ def est_perfil_materias_horario():
 
         cur = conn.cursor()
 
-        # ---- Info estudiante para el encabezado (igual que /estudiante/informacion) ----
+        # ---- Info estudiante para el encabezado ----
         cur.execute("""
             SELECT
                 a.numero_control AS matricula,
@@ -768,6 +751,7 @@ def est_solicitar_libro_modal():
         resultados=resultados,
     )
 
+
 # =====================================
 # ESTUDIANTE – AULAS
 # =====================================
@@ -883,6 +867,7 @@ def est_perfil_aulas():
         active_tab="aulas",
     )
 
+
 # =====================================
 # ESTUDIANTE – MÁS PÁGINAS SIMPLES
 # =====================================
@@ -916,6 +901,118 @@ def est_notificaciones_all():
 
 
 # =====================================
+# FUNCIONES AUX. ESPECÍFICAS DOCENTE
+# =====================================
+
+def _get_personal_id(conn, user_id):
+    """
+    Obtiene rrhh.personal.id_personal a partir de seguridad.usuarios.id_usuario.
+    Devuelve None si no hay vínculo.
+    """
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT p.id_personal
+        FROM rrhh.personal p
+        WHERE p.fk_id_usuario = %s;
+    """, (user_id,))
+    row = cur.fetchone()
+    cur.close()
+    return row["id_personal"] if row else None
+
+
+# =====================================
+# DOCENTE – PANEL / PERFIL PRINCIPAL
+# =====================================
+
+@app.route("/perfil/docente")
+@login_required
+@role_required("Docente")
+def perfil_docente():
+    """
+    Panel principal del docente.
+
+    Construye:
+      - resumen global (total_materias, total_grupos, total_alumnos)
+      - resumen_ciclo: lista de filas {ciclo, materias, grupos, alumnos}
+    y los envía a templates/perfiles/profile_docente.html
+    """
+    user = current_user()
+
+    # Valores por defecto por si algo falla
+    resumen = {
+        "total_materias": 0,
+        "total_grupos": 0,
+        "total_alumnos": 0,
+    }
+    resumen_ciclo = []
+
+    conn = None
+    try:
+        conn = get_connection()
+        personal_id = _get_personal_id(conn, user["id_usuario"])
+        if not personal_id:
+            raise Exception("No se encontró registro en rrhh.personal para este docente.")
+
+        cur = conn.cursor()
+
+        # --------- Resumen global ----------
+        cur.execute("""
+            SELECT
+                COUNT(DISTINCT m.materia_id)       AS total_materias,
+                COUNT(DISTINCT ma.materia_alta_id) AS total_grupos,
+                COUNT(DISTINCT ai.fk_alumno)       AS total_alumnos
+            FROM planes.materia_alta ma
+            JOIN planes.carrera_materia cm
+              ON cm.carrera_materia_id = ma.carrera_materia_id
+            JOIN planes.materia m
+              ON m.materia_id = cm.materia_id
+            LEFT JOIN academico.alumno_inscripcion ai
+              ON ai.fk_materia_alta = ma.materia_alta_id
+            WHERE ma.fk_personal = %s;
+        """, (personal_id,))
+        row = cur.fetchone()
+        if row:
+            resumen["total_materias"] = row["total_materias"] or 0
+            resumen["total_grupos"] = row["total_grupos"] or 0
+            resumen["total_alumnos"] = row["total_alumnos"] or 0
+
+        # --------- Resumen por ciclo ----------
+        cur.execute("""
+            SELECT
+                ma.ciclo,
+                COUNT(DISTINCT m.materia_id)       AS materias,
+                COUNT(DISTINCT ma.materia_alta_id) AS grupos,
+                COUNT(DISTINCT ai.fk_alumno)       AS alumnos
+            FROM planes.materia_alta ma
+            JOIN planes.carrera_materia cm
+              ON cm.carrera_materia_id = ma.carrera_materia_id
+            JOIN planes.materia m
+              ON m.materia_id = cm.materia_id
+            LEFT JOIN academico.alumno_inscripcion ai
+              ON ai.fk_materia_alta = ma.materia_alta_id
+            WHERE ma.fk_personal = %s
+            GROUP BY ma.ciclo
+            ORDER BY ma.ciclo DESC;
+        """, (personal_id,))
+        resumen_ciclo = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
+        flash(f"Error cargando resumen del docente: {e}", "warning")
+
+    return render_template(
+        "perfiles/profile_docente.html",
+        user=user,
+        resumen=resumen,
+        resumen_ciclo=resumen_ciclo
+    )
+
+
+# =====================================
 # DOCENTE – GRUPOS Y MATERIAS
 # =====================================
 
@@ -937,17 +1034,21 @@ def docente_grupos_materias():
             SELECT
                 ma.materia_alta_id,
                 ma.ciclo,
-                c.clave AS carrera_clave,
+                c.clave  AS carrera_clave,
                 c.nombre AS carrera_nombre,
-                m.clave AS materia_clave,
+                m.clave  AS materia_clave,
                 m.nombre AS materia_nombre,
                 cm.semestre,
                 COUNT(ai.inscripcion_id) AS num_alumnos
             FROM planes.materia_alta ma
-            JOIN planes.carrera_materia cm ON cm.carrera_materia_id = ma.carrera_materia_id
-            JOIN planes.carrera c ON c.carrera_id = cm.carrera_id
-            JOIN planes.materia m ON m.materia_id = cm.materia_id
-            LEFT JOIN academico.alumno_inscripcion ai ON ai.fk_materia_alta = ma.materia_alta_id
+            JOIN planes.carrera_materia cm
+              ON cm.carrera_materia_id = ma.carrera_materia_id
+            JOIN planes.carrera c
+              ON c.carrera_id = cm.carrera_id
+            JOIN planes.materia m
+              ON m.materia_id = cm.materia_id
+            LEFT JOIN academico.alumno_inscripcion ai
+              ON ai.fk_materia_alta = ma.materia_alta_id
             WHERE ma.fk_personal = %s
             GROUP BY
                 ma.materia_alta_id, ma.ciclo,
@@ -991,23 +1092,21 @@ def docente_evaluaciones():
 
         cur = conn.cursor()
 
-        # Si POST: actualizar calificación
+        # --- Si POST: actualizar calificación ---
         if request.method == "POST":
             inscripcion_id = request.form.get("inscripcion_id")
             nueva_calif = request.form.get("calificacion")
+
             try:
-                if nueva_calif == "":
-                    nueva_val = None
-                else:
-                    nueva_val = float(nueva_calif)
+                nueva_val = None if nueva_calif == "" else float(nueva_calif)
                 cur.execute("""
                     UPDATE academico.alumno_inscripcion ai
                     SET calificacion = %s
                     WHERE ai.inscripcion_id = %s
                       AND ai.fk_materia_alta IN (
-                        SELECT ma.materia_alta_id
-                        FROM planes.materia_alta ma
-                        WHERE ma.fk_personal = %s
+                          SELECT ma.materia_alta_id
+                          FROM planes.materia_alta ma
+                          WHERE ma.fk_personal = %s
                       );
                 """, (nueva_val, inscripcion_id, personal_id))
                 conn.commit()
@@ -1016,7 +1115,7 @@ def docente_evaluaciones():
                 conn.rollback()
                 flash(f"Error al actualizar calificación: {e_upd}", "danger")
 
-        # Obtener primera materia del docente si no se manda por querystring
+        # --- Materia seleccionada (o primera del docente) ---
         if not materia_alta_id:
             cur.execute("""
                 SELECT ma.materia_alta_id
@@ -1028,35 +1127,43 @@ def docente_evaluaciones():
             row = cur.fetchone()
             materia_alta_id = row["materia_alta_id"] if row else None
 
+        # --- Lista de calificaciones ---
         if materia_alta_id:
             cur.execute("""
                 SELECT
                     ai.inscripcion_id,
                     a.numero_control,
-                    TRIM(a.nombre || ' ' || a.apellido_paterno || ' ' || COALESCE(a.apellido_materno,'')) AS alumno,
-                    m.clave AS materia_clave,
+                    TRIM(a.nombre || ' ' || a.apellido_paterno || ' ' ||
+                         COALESCE(a.apellido_materno,'')) AS alumno,
+                    m.clave  AS materia_clave,
                     m.nombre AS materia_nombre,
                     ai.calificacion
                 FROM academico.alumno_inscripcion ai
-                JOIN academico.alumnos a ON a.numero_control = ai.fk_alumno
-                JOIN planes.materia_alta ma ON ma.materia_alta_id = ai.fk_materia_alta
-                JOIN planes.carrera_materia cm ON cm.carrera_materia_id = ma.carrera_materia_id
-                JOIN planes.materia m ON m.materia_id = cm.materia_id
+                JOIN academico.alumnos a
+                  ON a.numero_control = ai.fk_alumno
+                JOIN planes.materia_alta ma
+                  ON ma.materia_alta_id = ai.fk_materia_alta
+                JOIN planes.carrera_materia cm
+                  ON cm.carrera_materia_id = ma.carrera_materia_id
+                JOIN planes.materia m
+                  ON m.materia_id = cm.materia_id
                 WHERE ai.fk_materia_alta = %s
                   AND ma.fk_personal = %s
                 ORDER BY a.apellido_paterno, a.apellido_materno, a.nombre;
             """, (materia_alta_id, personal_id))
             calificaciones = cur.fetchall()
 
-        # También traer todas las materias del docente para un select en la vista
+        # --- Todas las materias del docente para el <select> ---
         cur.execute("""
             SELECT
                 ma.materia_alta_id,
                 ma.ciclo,
                 m.clave || ' - ' || m.nombre AS etiqueta
             FROM planes.materia_alta ma
-            JOIN planes.carrera_materia cm ON cm.carrera_materia_id = ma.carrera_materia_id
-            JOIN planes.materia m ON m.materia_id = cm.materia_id
+            JOIN planes.carrera_materia cm
+              ON cm.carrera_materia_id = ma.carrera_materia_id
+            JOIN planes.materia m
+              ON m.materia_id = cm.materia_id
             WHERE ma.fk_personal = %s
             ORDER BY ma.ciclo, m.clave;
         """, (personal_id,))
@@ -1098,7 +1205,7 @@ def docente_asistencias():
 
         cur = conn.cursor()
 
-        # Obtener primera materia si no se manda
+        # Materia por defecto (primera asignada)
         if not materia_alta_id:
             cur.execute("""
                 SELECT ma.materia_alta_id
@@ -1110,29 +1217,35 @@ def docente_asistencias():
             row = cur.fetchone()
             materia_alta_id = row["materia_alta_id"] if row else None
 
+        # Lista de alumnos
         if materia_alta_id:
             cur.execute("""
                 SELECT
                     a.numero_control,
-                    TRIM(a.nombre || ' ' || a.apellido_paterno || ' ' || COALESCE(a.apellido_materno,'')) AS alumno
+                    TRIM(a.nombre || ' ' || a.apellido_paterno || ' ' ||
+                         COALESCE(a.apellido_materno,'')) AS alumno
                 FROM academico.alumno_inscripcion ai
-                JOIN academico.alumnos a ON a.numero_control = ai.fk_alumno
-                JOIN planes.materia_alta ma ON ma.materia_alta_id = ai.fk_materia_alta
+                JOIN academico.alumnos a
+                  ON a.numero_control = ai.fk_alumno
+                JOIN planes.materia_alta ma
+                  ON ma.materia_alta_id = ai.fk_materia_alta
                 WHERE ai.fk_materia_alta = %s
                   AND ma.fk_personal = %s
                 ORDER BY a.apellido_paterno, a.apellido_materno, a.nombre;
             """, (materia_alta_id, personal_id))
             lista = cur.fetchall()
 
-        # materias del docente para un select en la vista
+        # Materias del docente para el <select>
         cur.execute("""
             SELECT
                 ma.materia_alta_id,
                 ma.ciclo,
                 m.clave || ' - ' || m.nombre AS etiqueta
             FROM planes.materia_alta ma
-            JOIN planes.carrera_materia cm ON cm.carrera_materia_id = ma.carrera_materia_id
-            JOIN planes.materia m ON m.materia_id = cm.materia_id
+            JOIN planes.carrera_materia cm
+              ON cm.carrera_materia_id = ma.carrera_materia_id
+            JOIN planes.materia m
+              ON m.materia_id = cm.materia_id
             WHERE ma.fk_personal = %s
             ORDER BY ma.ciclo, m.clave;
         """, (personal_id,))
@@ -1155,23 +1268,165 @@ def docente_asistencias():
 
 
 # =====================================
-# DOCENTE – COMUNICACIÓN (DEMO)
+# DOCENTE – COMUNICACIÓN (DEMO, PERO FUNCIONAL)
 # =====================================
 
 @app.route("/docente/comunicacion")
 @login_required
 @role_required("Docente")
 def docente_comunicacion():
+    """
+    De momento es demo, pero ya respeta la estructura
+    que espera templates/docente/comunicacion.html.
+    """
     user = current_user()
-    # Demo: avisos en memoria (en un futuro puede venir de una tabla)
+
+    # En el futuro aquí puedes leer una tabla real de avisos.
+    # Por ahora son datos simulados con las claves correctas.
     avisos = [
-        {"titulo": "Entrega de proyecto final", "mensaje": "Recuerda subir tu proyecto antes del viernes."},
-        {"titulo": "Examen parcial", "mensaje": "El examen será la próxima semana en horario de clase."},
+        {
+            "titulo": "Entrega de proyecto final",
+            "ciclo": "2025-1",
+            "materia_clave": "PROG1",
+            "materia_nombre": "Programación I",
+            "creado_en": "2025-11-20",
+            "mensaje": "Recuerda subir tu proyecto antes del viernes."
+        },
+        {
+            "titulo": "Examen parcial",
+            "ciclo": "2025-1",
+            "materia_clave": "PROG2",
+            "materia_nombre": "Programación II",
+            "creado_en": "2025-11-25",
+            "mensaje": "El examen será la próxima semana en horario de clase."
+        },
     ]
+
     return render_template(
         "docente/comunicacion.html",
         user=user,
         avisos=avisos
+    )
+
+
+# =====================================
+# PERFIL – BIBLIOTECARIO
+# =====================================
+
+@app.route("/perfil/bibliotecario")
+@login_required
+@role_required("Bibliotecario")
+def perfil_bibliotecario():
+    user = current_user()
+    q = request.args.get("q", "").strip()   # texto de búsqueda
+
+    # Estructura base del resumen para la tarjeta superior
+    resumen = {
+        "total_libros": 0,
+        "prestamos_activos": 0,
+        "estudiantes_con_prestamo": 0,
+        "prestamos_retrasados": 0,
+    }
+    libros = []
+    conn = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # --------------------- RESUMEN DE LA BIBLIOTECA ----------------------
+        # 1) Libros en catálogo
+        cur.execute("SELECT COUNT(*) AS total FROM biblioteca.libros;")
+        resumen["total_libros"] = cur.fetchone()["total"]
+
+        # 2) Préstamos activos
+        cur.execute("""
+            SELECT COUNT(*) AS total
+            FROM biblioteca.prestamos
+            WHERE estado = 'Activo';
+        """)
+        resumen["prestamos_activos"] = cur.fetchone()["total"]
+
+        # 3) Estudiantes con préstamo (distintos)
+        cur.execute("""
+            SELECT COUNT(DISTINCT fk_alumno) AS total
+            FROM biblioteca.prestamos
+            WHERE estado = 'Activo' AND fk_alumno IS NOT NULL;
+        """)
+        resumen["estudiantes_con_prestamo"] = cur.fetchone()["total"]
+
+        # 4) Préstamos retrasados
+        cur.execute("""
+            SELECT COUNT(*) AS total
+            FROM biblioteca.prestamos
+            WHERE estado = 'Vencido'
+               OR (estado = 'Activo' AND fecha_devolucion_estimada < NOW());
+        """)
+        resumen["prestamos_retrasados"] = cur.fetchone()["total"]
+
+        # --------------------- LISTA / BÚSQUEDA DE LIBROS --------------------
+        if q:
+            patron = f"%{q}%"
+            cur.execute("""
+                SELECT
+                    l.id_libro,
+                    l.titulo_libro,
+                    c.codigo_clasificacion,
+                    e.nombre_editorial,
+                    l.anio_edicion,
+                    l.isbn,
+                    COALESCE(inv.cantidad, 0)            AS cantidad,
+                    COALESCE(inv.cantidad_disponible, 0) AS cantidad_disponible
+                FROM biblioteca.libros l
+                LEFT JOIN biblioteca.clasificaciones c
+                       ON c.id_clasificacion = l.id_clasificacion
+                LEFT JOIN biblioteca.editoriales e
+                       ON e.id_editorial = l.id_editorial
+                LEFT JOIN biblioteca.inventario inv
+                       ON inv.id_libro = l.id_libro
+                WHERE l.titulo_libro ILIKE %s
+                   OR e.nombre_editorial ILIKE %s
+                   OR c.codigo_clasificacion ILIKE %s
+                ORDER BY l.titulo_libro;
+            """, (patron, patron, patron))
+        else:
+            # Sin búsqueda: mostrar todo el catálogo
+            cur.execute("""
+                SELECT
+                    l.id_libro,
+                    l.titulo_libro,
+                    c.codigo_clasificacion,
+                    e.nombre_editorial,
+                    l.anio_edicion,
+                    l.isbn,
+                    COALESCE(inv.cantidad, 0)            AS cantidad,
+                    COALESCE(inv.cantidad_disponible, 0) AS cantidad_disponible
+                FROM biblioteca.libros l
+                LEFT JOIN biblioteca.clasificaciones c
+                       ON c.id_clasificacion = l.id_clasificacion
+                LEFT JOIN biblioteca.editoriales e
+                       ON e.id_editorial = l.id_editorial
+                LEFT JOIN biblioteca.inventario inv
+                       ON inv.id_libro = l.id_libro
+                ORDER BY l.titulo_libro;
+            """)
+
+        libros = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
+        flash(f"Error cargando panel del bibliotecario: {e}", "danger")
+
+    return render_template(
+        "perfiles/profile_bibliotecario.html",
+        user=user,
+        resumen=resumen,   # si en tu template usas otro nombre, cámbialo aquí
+        libros=libros,
+        q=q
     )
 
 
@@ -1197,12 +1452,12 @@ def bib_catalogo():
                 e.nombre_editorial,
                 l.anio_edicion,
                 l.isbn,
-                COALESCE(inv.cantidad, 0) AS cantidad,
+                COALESCE(inv.cantidad, 0)            AS cantidad,
                 COALESCE(inv.cantidad_disponible, 0) AS cantidad_disponible
             FROM biblioteca.libros l
             LEFT JOIN biblioteca.clasificaciones c ON c.id_clasificacion = l.id_clasificacion
-            LEFT JOIN biblioteca.editoriales e ON e.id_editorial = l.id_editorial
-            LEFT JOIN biblioteca.inventario inv ON inv.id_libro = l.id_libro
+            LEFT JOIN biblioteca.editoriales     e ON e.id_editorial     = l.id_editorial
+            LEFT JOIN biblioteca.inventario     inv ON inv.id_libro      = l.id_libro
             ORDER BY l.titulo_libro;
         """)
         libros = cur.fetchall()
@@ -1229,14 +1484,15 @@ def bib_prestamos():
     user = current_user()
     prestamos = []
 
+    conn = None
     try:
         conn = get_connection()
         cur = conn.cursor()
 
+        # Si viene POST, marcar un préstamo como devuelto
         if request.method == "POST":
             prestamo_id = request.form.get("id_prestamo")
             try:
-                # Marcar como devuelto (simple)
                 cur.execute("""
                     UPDATE biblioteca.prestamos
                     SET estado = 'Devuelto',
@@ -1250,6 +1506,7 @@ def bib_prestamos():
                 conn.rollback()
                 flash(f"Error al marcar devolución: {e_upd}", "danger")
 
+        # Listar préstamos activos
         cur.execute("""
             SELECT
                 p.id_prestamo,
@@ -1269,6 +1526,8 @@ def bib_prestamos():
         cur.close()
         conn.close()
     except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
         flash(f"Error cargando préstamos: {e}", "danger")
 
     return render_template(
@@ -1328,7 +1587,7 @@ def bib_historial():
 @role_required("Bibliotecario")
 def bib_notificaciones():
     user = current_user()
-    # Demo: lista estática
+    # Por ahora solo demo estático; luego se puede ligar a una tabla
     notificaciones = [
         {"destinatario": "2501E0001", "mensaje": "Tu préstamo está por vencer."},
         {"destinatario": "2501E0002", "mensaje": "Por favor devuelve el libro pendiente."},
@@ -1337,6 +1596,90 @@ def bib_notificaciones():
         "biblioteca/notificaciones.html",
         user=user,
         notificaciones=notificaciones
+    )
+
+# =====================================
+# BIBLIOTECARIO – DETALLE DE LIBRO
+# =====================================
+
+@app.route("/biblioteca/libro/<int:id_libro>")
+@login_required
+@role_required("Bibliotecario")
+def biblioteca_libro_detalle(id_libro):
+    """
+    Muestra el detalle de un libro del catálogo (solo para bibliotecario).
+    """
+    user = current_user()
+    conn = None
+    libro = None
+    historial_prestamos = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Datos principales del libro + inventario
+        cur.execute("""
+            SELECT
+                l.id_libro,
+                l.titulo_libro,
+                c.codigo_clasificacion,
+                c.descripcion        AS clasificacion_descripcion,
+                e.nombre_editorial,
+                l.edicion,
+                l.anio_edicion,
+                l.isbn,
+                l.fuente_recurso,
+                l.incluye_cd,
+                COALESCE(inv.cantidad, 0)            AS cantidad,
+                COALESCE(inv.cantidad_disponible, 0) AS cantidad_disponible
+            FROM biblioteca.libros l
+            LEFT JOIN biblioteca.clasificaciones c
+                   ON c.id_clasificacion = l.id_clasificacion
+            LEFT JOIN biblioteca.editoriales e
+                   ON e.id_editorial = l.id_editorial
+            LEFT JOIN biblioteca.inventario inv
+                   ON inv.id_libro = l.id_libro
+            WHERE l.id_libro = %s;
+        """, (id_libro,))
+        libro = cur.fetchone()
+
+        # Si no existe el libro, 404
+        if not libro:
+            cur.close()
+            conn.close()
+            abort(404)
+
+        # Historial reciente de préstamos de ese libro (opcional)
+        cur.execute("""
+            SELECT
+                p.id_prestamo,
+                p.fk_alumno,
+                p.fk_personal,
+                p.fecha_prestamo,
+                p.fecha_devolucion_estimada,
+                p.fecha_devolucion_real,
+                p.estado
+            FROM biblioteca.prestamos p
+            WHERE p.id_libro = %s
+            ORDER BY p.fecha_prestamo DESC
+            LIMIT 20;
+        """, (id_libro,))
+        historial_prestamos = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
+        flash(f"Error cargando detalle del libro: {e}", "danger")
+
+    return render_template(
+        "biblioteca/libro_detalle.html",
+        user=user,
+        libro=libro,
+        historial_prestamos=historial_prestamos
     )
 
 
@@ -1444,20 +1787,28 @@ def admin_usuario_nuevo():
                 flash("Todos los campos son obligatorios.", "danger")
             else:
                 try:
-                    # Crear usuario
-                    cur.execute("""
+                    # Crear usuario (el trigger se encarga de hashear la contraseña)
+                    cur.execute(
+                        """
                         INSERT INTO seguridad.usuarios(nombre_usuario, correo_electronico, contrasena_hash)
                         VALUES (%s, %s, %s)
                         RETURNING id_usuario;
-                    """, (nombre_usuario, correo, contrasena))
-                    nuevo_id = cur.fetchone()["id_usuario"]
+                        """,
+                        (nombre_usuario, correo, contrasena),
+                    )
+                    nuevo_id_row = cur.fetchone()
+                    nuevo_id = nuevo_id_row["id_usuario"] if nuevo_id_row else None
 
                     # Asignar rol
-                    cur.execute("""
-                        INSERT INTO seguridad.usuario_rol(id_usuario, id_rol)
-                        VALUES (%s, %s)
-                        ON CONFLICT DO NOTHING;
-                    """, (nuevo_id, id_rol))
+                    if nuevo_id is not None:
+                        cur.execute(
+                            """
+                            INSERT INTO seguridad.usuario_rol(id_usuario, id_rol)
+                            VALUES (%s, %s)
+                            ON CONFLICT DO NOTHING;
+                            """,
+                            (nuevo_id, id_rol),
+                        )
 
                     conn.commit()
                     flash("Usuario creado correctamente.", "success")
@@ -1497,7 +1848,8 @@ def admin_usuario_editar(id_usuario):
         cur = conn.cursor()
 
         # Usuario + roles actuales
-        cur.execute("""
+        cur.execute(
+            """
             SELECT
                 u.id_usuario,
                 u.nombre_usuario,
@@ -1513,7 +1865,9 @@ def admin_usuario_editar(id_usuario):
             LEFT JOIN seguridad.roles r ON r.id_rol = ur.id_rol
             WHERE u.id_usuario = %s
             GROUP BY u.id_usuario;
-        """, (id_usuario,))
+            """,
+            (id_usuario,),
+        )
         usuario = cur.fetchone()
         if not usuario:
             cur.close()
@@ -1531,22 +1885,31 @@ def admin_usuario_editar(id_usuario):
 
             try:
                 # Actualizar usuario
-                cur.execute("""
+                cur.execute(
+                    """
                     UPDATE seguridad.usuarios
                     SET correo_electronico = %s,
                         activo = %s
                     WHERE id_usuario = %s;
-                """, (correo, activo, id_usuario))
+                    """,
+                    (correo, activo, id_usuario),
+                )
 
                 # Limpiar roles previos
-                cur.execute("DELETE FROM seguridad.usuario_rol WHERE id_usuario = %s;", (id_usuario,))
+                cur.execute(
+                    "DELETE FROM seguridad.usuario_rol WHERE id_usuario = %s;",
+                    (id_usuario,),
+                )
 
                 # Insertar nuevos roles
                 for rid in nuevos_roles:
-                    cur.execute("""
+                    cur.execute(
+                        """
                         INSERT INTO seguridad.usuario_rol(id_usuario, id_rol)
                         VALUES (%s, %s);
-                    """, (id_usuario, int(rid)))
+                        """,
+                        (id_usuario, int(rid)),
+                    )
 
                 conn.commit()
                 flash("Usuario actualizado.", "success")
@@ -1583,9 +1946,15 @@ def admin_usuario_baja(id_usuario):
         cur = conn.cursor()
 
         # Primero borrar sus roles
-        cur.execute("DELETE FROM seguridad.usuario_rol WHERE id_usuario = %s;", (id_usuario,))
+        cur.execute(
+            "DELETE FROM seguridad.usuario_rol WHERE id_usuario = %s;",
+            (id_usuario,),
+        )
         # Luego borrar usuario
-        cur.execute("DELETE FROM seguridad.usuarios WHERE id_usuario = %s;", (id_usuario,))
+        cur.execute(
+            "DELETE FROM seguridad.usuarios WHERE id_usuario = %s;",
+            (id_usuario,),
+        )
 
         conn.commit()
         cur.close()
@@ -1610,12 +1979,15 @@ def admin_usuario_block(id_usuario):
         cur = conn.cursor()
 
         # Alternar activo
-        cur.execute("""
+        cur.execute(
+            """
             UPDATE seguridad.usuarios
             SET activo = NOT activo
             WHERE id_usuario = %s
             RETURNING activo;
-        """, (id_usuario,))
+            """,
+            (id_usuario,),
+        )
         row = cur.fetchone()
         conn.commit()
         cur.close()
@@ -1646,12 +2018,15 @@ def admin_usuario_reset(id_usuario):
         nueva_pwd = generate_random_password(10)
 
         # Actualizar contrasena_hash (trigger hará el hash)
-        cur.execute("""
+        cur.execute(
+            """
             UPDATE seguridad.usuarios
             SET contrasena_hash = %s
             WHERE id_usuario = %s
             RETURNING correo_electronico;
-        """, (nueva_pwd, id_usuario))
+            """,
+            (nueva_pwd, id_usuario),
+        )
         row = cur.fetchone()
         conn.commit()
         cur.close()
@@ -1662,14 +2037,533 @@ def admin_usuario_reset(id_usuario):
             send_email(
                 correo,
                 "Restablecimiento de contraseña",
-                f"Tu nueva contraseña temporal es: {nueva_pwd}"
+                f"Tu nueva contraseña temporal es: {nueva_pwd}",
             )
 
-        flash("Contraseña restablecida y enviada por correo (si SMTP está configurado).", "success")
+        flash(
+            "Contraseña restablecida y enviada por correo (si SMTP está configurado).",
+            "success",
+        )
     except Exception as e:
         flash(f"Error al restablecer contraseña: {e}", "danger")
 
     return redirect(url_for("admin_usuarios_list", modo="reset"))
+
+
+# =====================================
+# ADMIN – PARÁMETROS GLOBALES
+# =====================================
+
+@app.route("/admin/parametros-globales", methods=["GET", "POST"])
+@login_required
+@role_required("Administrador")
+def admin_parametros_globales():
+    user = current_user()
+
+    # Valores por defecto
+    creditos_maximos = {
+        "normal": 24,
+        "sobrecarga": 32,
+        "max_reprobadas": 3,
+    }
+    periodos = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Si viene POST, guardamos límites de créditos en academico.parametros_globales
+        if request.method == "POST":
+            try:
+                normal = int(request.form.get("creditos_normales", "24"))
+                sobrecarga = int(request.form.get("creditos_sobrecarga", "32"))
+                max_rep = int(request.form.get("max_reprobadas", "3"))
+
+                # No vamos a dejar que pongan cosas absurdas
+                if normal <= 0 or sobrecarga <= 0 or max_rep < 0:
+                    raise ValueError("Valores inválidos de créditos.")
+
+                data = [
+                    ("creditos_normales", str(normal)),
+                    ("creditos_sobrecarga", str(sobrecarga)),
+                    ("max_materias_reprobadas", str(max_rep)),
+                ]
+
+                for clave, valor in data:
+                    cur.execute(
+                        """
+                        INSERT INTO academico.parametros_globales (clave, valor_texto, descripcion, categoria)
+                        VALUES (%s, %s, %s, 'inscripciones')
+                        ON CONFLICT (clave) DO UPDATE
+                          SET valor_texto = EXCLUDED.valor_texto,
+                              descripcion = EXCLUDED.descripcion,
+                              categoria   = EXCLUDED.categoria;
+                        """,
+                        (
+                            clave,
+                            valor,
+                            "Parámetro actualizado desde panel de administrador",
+                        ),
+                    )
+
+                conn.commit()
+                flash("Límites de créditos actualizados.", "success")
+            except Exception as e_upd:
+                conn.rollback()
+                flash(f"Error al guardar límites de créditos: {e_upd}", "danger")
+
+        # Cargar periodos desde planes.materia_alta
+        cur.execute(
+            """
+            SELECT
+                ma.ciclo,
+                COUNT(*) AS grupos,
+                MIN(cm.semestre) AS min_semestre,
+                MAX(cm.semestre) AS max_semestre
+            FROM planes.materia_alta ma
+            JOIN planes.carrera_materia cm
+              ON cm.carrera_materia_id = ma.carrera_materia_id
+            GROUP BY ma.ciclo
+            ORDER BY ma.ciclo DESC;
+            """
+        )
+        periodos = cur.fetchall()
+
+        # Leer valores de créditos desde academico.parametros_globales (si existen)
+        cur.execute(
+            """
+            SELECT clave, valor_texto
+            FROM academico.parametros_globales
+            WHERE clave IN ('creditos_normales', 'creditos_sobrecarga', 'max_materias_reprobadas');
+            """
+        )
+        rows = cur.fetchall()
+        for row in rows:
+            if row["clave"] == "creditos_normales":
+                creditos_maximos["normal"] = int(row["valor_texto"])
+            elif row["clave"] == "creditos_sobrecarga":
+                creditos_maximos["sobrecarga"] = int(row["valor_texto"])
+            elif row["clave"] == "max_materias_reprobadas":
+                creditos_maximos["max_reprobadas"] = int(row["valor_texto"])
+
+        cur.close()
+        conn.close()
+    except Exception as e:
+        flash(f"Error cargando parámetros globales: {e}", "danger")
+
+    return render_template(
+        "admin/parametros_globales.html",
+        user=user,
+        periodos=periodos,
+        creditos_maximos=creditos_maximos,
+    )
+
+
+# =====================================
+# ADMIN – CATÁLOGOS ACADÉMICOS (con CRUD simple sobre carrera_materia)
+# =====================================
+
+@app.route("/admin/catalogos-academicos", methods=["GET", "POST"])
+@login_required
+@role_required("Administrador")
+def admin_catalogos():
+    user = current_user()
+    accion = request.args.get("accion", "ver")  # ver | agregar | editar
+    carreras = []
+    materias = []
+    carreras_materias = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # POST: alta / edición / baja de relación carrera-materia
+        if request.method == "POST":
+            form_accion = request.form.get("form_accion")
+
+            try:
+                if form_accion == "guardar_relacion":
+                    carrera_id = int(request.form.get("carrera_id"))
+                    materia_id = int(request.form.get("materia_id"))
+                    semestre = int(request.form.get("semestre"))
+
+                    if semestre < 1 or semestre > 12:
+                        raise ValueError("El semestre debe estar entre 1 y 12.")
+
+                    # Alta o actualización (CRUD básico sobre carrera_materia)
+                    cur.execute(
+                        """
+                        INSERT INTO planes.carrera_materia
+                            (carrera_id, materia_id, semestre, horas_teoricas, horas_practicas)
+                        VALUES (%s, %s, %s, 2, 2)
+                        ON CONFLICT (carrera_id, materia_id)
+                        DO UPDATE SET semestre = EXCLUDED.semestre;
+                        """,
+                        (carrera_id, materia_id, semestre),
+                    )
+                    conn.commit()
+                    flash("Relación carrera–materia guardada correctamente.", "success")
+
+                elif form_accion == "eliminar_relacion":
+                    cm_id = int(request.form.get("carrera_materia_id"))
+                    cur.execute(
+                        "DELETE FROM planes.carrera_materia WHERE carrera_materia_id = %s;",
+                        (cm_id,),
+                    )
+                    conn.commit()
+                    flash("Relación carrera–materia eliminada.", "info")
+
+            except Exception as crud_err:
+                conn.rollback()
+                flash(f"Error en la operación de catálogos: {crud_err}", "danger")
+
+            # PRG: redirigimos para evitar reenvío de formulario
+            return redirect(url_for("admin_catalogos", accion=accion))
+
+        # GET: cargar listados
+        # Carreras
+        cur.execute(
+            """
+            SELECT carrera_id, clave, nombre
+            FROM planes.carrera
+            ORDER BY clave;
+            """
+        )
+        carreras = cur.fetchall()
+
+        # Materias
+        cur.execute(
+            """
+            SELECT materia_id, clave, nombre
+            FROM planes.materia
+            ORDER BY clave;
+            """
+        )
+        materias = cur.fetchall()
+
+        # Relación carrera-materia (plan de estudios)
+        cur.execute(
+            """
+            SELECT
+                cm.carrera_materia_id,
+                c.clave AS carrera_clave,
+                c.nombre AS carrera_nombre,
+                m.clave AS materia_clave,
+                m.nombre AS materia_nombre,
+                cm.semestre
+            FROM planes.carrera_materia cm
+            JOIN planes.carrera c ON c.carrera_id = cm.carrera_id
+            JOIN planes.materia m ON m.materia_id = cm.materia_id
+            ORDER BY c.clave, cm.semestre, m.clave;
+            """
+        )
+        carreras_materias = cur.fetchall()
+
+        cur.close()
+        conn.close()
+    except Exception as e:
+        flash(f"Error cargando catálogos académicos: {e}", "danger")
+
+    return render_template(
+        "admin/catalogos_academicos.html",
+        user=user,
+        accion=accion,
+        carreras=carreras,
+        materias=materias,
+        carreras_materias=carreras_materias,
+    )
+
+
+# =====================================
+# ADMIN – FORMULARIOS Y ACADÉMICO
+# =====================================
+
+@app.route("/admin/formularios-academico")
+@login_required
+@role_required("Administrador")
+def admin_formularios():
+    user = current_user()
+    formularios = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT id_formulario, nombre, tipo, version, descripcion
+            FROM academico.formularios_institucionales
+            ORDER BY id_formulario;
+        """)
+        formularios = cur.fetchall()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        flash(f"Error cargando formularios institucionales: {e}", "danger")
+
+    return render_template(
+        "admin/formularios_academico.html",
+        user=user,
+        formularios=formularios
+    )
+
+
+# =====================================
+# ADMIN – FORMULARIOS: CREAR NUEVO Y ENVIAR AL DISEÑADOR
+# =====================================
+
+@app.route("/admin/formularios-academico/nuevo", methods=["POST"])
+@login_required
+@role_required("Administrador")
+def admin_formulario_nuevo():
+    user = current_user()  # por si lo quieres usar en logs
+    conn = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Valores por defecto del borrador
+        cur.execute("""
+            INSERT INTO academico.formularios_institucionales
+                (nombre, tipo, version, descripcion)
+            VALUES
+                (%s, %s, %s, %s)
+            RETURNING id_formulario;
+        """, (
+            "Nuevo formulario (borrador)",
+            "Alumno",
+            1.0,
+            "Borrador creado desde el panel de administración."
+        ))
+
+        row = cur.fetchone()
+        nuevo_id = row["id_formulario"]
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        flash("Se creó un nuevo formulario en estado borrador.", "success")
+        return redirect(url_for("admin_formulario_disenar",
+                                id_formulario=nuevo_id))
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        flash(f"Error al crear nuevo formulario: {e}", "danger")
+        return redirect(url_for("admin_formularios"))
+
+
+# =====================================
+# ADMIN – FORMULARIOS: DISEÑAR / EDITAR METADATOS
+# =====================================
+
+@app.route("/admin/formularios-academico/<int:id_formulario>/disenar",
+           methods=["GET", "POST"])
+@login_required
+@role_required("Administrador")
+def admin_formulario_disenar(id_formulario):
+    user = current_user()
+    conn = None
+    formulario = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        if request.method == "POST":
+            nombre = request.form.get("nombre", "").strip()
+            tipo = request.form.get("tipo", "").strip()
+            version = request.form.get("version", "").strip()
+            descripcion = request.form.get("descripcion", "").strip()
+
+            # Versión segura a float
+            try:
+                version_val = float(version)
+            except ValueError:
+                version_val = 1.0
+
+            cur.execute("""
+                UPDATE academico.formularios_institucionales
+                SET nombre = %s,
+                    tipo = %s,
+                    version = %s,
+                    descripcion = %s
+                WHERE id_formulario = %s;
+            """, (nombre, tipo, version_val, descripcion, id_formulario))
+
+            conn.commit()
+            flash("Cambios del formulario guardados correctamente.", "success")
+
+        # Cargar datos actualizados
+        cur.execute("""
+            SELECT id_formulario, nombre, tipo, version, descripcion
+            FROM academico.formularios_institucionales
+            WHERE id_formulario = %s;
+        """, (id_formulario,))
+        formulario = cur.fetchone()
+
+        if not formulario:
+            cur.close()
+            conn.close()
+            abort(404)
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        flash(f"Error al cargar/guardar formulario: {e}", "danger")
+
+    return render_template(
+        "admin/formulario_disenar.html",
+        user=user,
+        formulario=formulario
+    )
+
+
+# =====================================
+# ADMIN – FORMULARIOS: ELIMINAR
+# =====================================
+
+@app.route("/admin/formularios-academico/<int:id_formulario>/eliminar",
+           methods=["POST"])
+@login_required
+@role_required("Administrador")
+def admin_formulario_eliminar(id_formulario):
+    conn = None
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            DELETE FROM academico.formularios_institucionales
+            WHERE id_formulario = %s;
+        """, (id_formulario,))
+        conn.commit()
+        cur.close()
+        conn.close()
+        flash("Formulario eliminado correctamente.", "info")
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        flash(f"Error al eliminar formulario: {e}", "danger")
+
+    return redirect(url_for("admin_formularios"))
+
+
+# =====================================
+# ADMIN – DATOS Y SEGURIDAD
+# =====================================
+
+@app.route("/admin/datos-seguridad")
+@login_required
+@role_required("Administrador")
+def admin_datos_seguridad():
+    user = current_user()
+    resumen = []
+    usuarios = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Resumen por rol y estado (activo/bloqueado)
+        cur.execute(
+            """
+            SELECT
+                COALESCE(r.nombre_rol, 'Sin rol') AS rol,
+                CASE WHEN u.activo THEN 'Activo' ELSE 'Bloqueado' END AS estado,
+                COUNT(*) AS total
+            FROM seguridad.usuarios u
+            LEFT JOIN seguridad.usuario_rol ur ON ur.id_usuario = u.id_usuario
+            LEFT JOIN seguridad.roles r ON r.id_rol = ur.id_rol
+            GROUP BY rol, estado
+            ORDER BY rol, estado;
+            """
+        )
+        resumen = cur.fetchall()
+
+        # Lista de usuarios (solo lectura)
+        cur.execute(
+            """
+            SELECT
+                u.id_usuario,
+                u.nombre_usuario,
+                u.correo_electronico,
+                u.activo,
+                COALESCE(
+                    STRING_AGG(DISTINCT r.nombre_rol, ', ' ORDER BY r.nombre_rol),
+                    'Sin rol'
+                ) AS roles
+            FROM seguridad.usuarios u
+            LEFT JOIN seguridad.usuario_rol ur ON ur.id_usuario = u.id_usuario
+            LEFT JOIN seguridad.roles r ON r.id_rol = ur.id_rol
+            GROUP BY u.id_usuario, u.nombre_usuario, u.correo_electronico, u.activo
+            ORDER BY u.id_usuario;
+            """
+        )
+        usuarios = cur.fetchall()
+
+        cur.close()
+        conn.close()
+    except Exception as e:
+        flash(f"Error cargando datos y seguridad: {e}", "danger")
+
+    return render_template(
+        "admin/datos_seguridad.html",
+        user=user,
+        resumen=resumen,      # lista de tuplas (rol, estado, total)
+        usuarios=usuarios     # lista de tuplas (id, nombre, correo, activo, roles)
+    )
+
+
+# =====================================
+# ADMIN – CONSOLA DE EVENTOS
+# =====================================
+
+@app.route("/admin/eventos")
+@login_required
+@role_required("Administrador")
+def admin_eventos():
+    user = current_user()
+    eventos = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+        # Usamos seguridad.intentos_login como "eventos" (demo)
+        cur.execute(
+            """
+            SELECT
+                il.id_intento,
+                il.intentado_en,
+                il.identificador,
+                il.direccion_ip,
+                il.agente_usuario,
+                il.exitoso,
+                u.nombre_usuario
+            FROM seguridad.intentos_login il
+            LEFT JOIN seguridad.usuarios u
+              ON u.id_usuario = il.id_usuario
+            ORDER BY il.intentado_en DESC
+            LIMIT 50;
+            """
+        )
+        eventos = cur.fetchall()
+        cur.close()
+        conn.close()
+    except Exception as e:
+        flash(
+            f"Error cargando consola de eventos (intentos de login): {e}",
+            "danger",
+        )
+
+    return render_template(
+        "admin/eventos.html",
+        user=user,
+        eventos=eventos,
+    )
+
 
 
 
@@ -1690,6 +2584,424 @@ def estado_loading_demo():
 @app.route("/estado/recargar")
 def estado_reload_demo():
     return render_template("components/reload_state.html")
+
+# =====================================
+# PERFIL – COORDINADOR
+# =====================================
+
+@app.route("/perfil/coordinador")
+@login_required
+@role_required("Coordinador")
+def perfil_coordinador():
+    """
+    Panel principal del coordinador.
+
+    Muestra:
+      - Resumen académico (carreras, materias, docentes, alumnos) por ciclo.
+      - Tabla de grupos/materias usando planes.vw_materia_alta_detalle.
+
+    Además calcula un ciclo_actual:
+      1) academico.parametros_globales (clave='ciclo_activo')
+      2) en su defecto, el último ciclo existente en planes.materia_alta
+      3) y si no hay datos, '2025-1' como fallback.
+    """
+    user = current_user()
+    conn = None
+
+    resumen = {
+        "carreras_activas": 0,
+        "materias_en_plan": 0,
+        "docentes": 0,
+        "alumnos": 0,
+    }
+    materias = []
+    ciclo_actual = None
+    primer_grupo_id = None
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # ------------------ CICLO ACTUAL ------------------
+        cur.execute("""
+            SELECT valor_texto
+            FROM academico.parametros_globales
+            WHERE clave = 'ciclo_activo';
+        """)
+        row = cur.fetchone()
+        if row and row["valor_texto"]:
+            ciclo_actual = row["valor_texto"]
+
+        # Si no hay parámetro, tomamos el último ciclo que exista en materia_alta
+        if not ciclo_actual:
+            cur.execute("""
+                SELECT DISTINCT ciclo
+                FROM planes.materia_alta
+                ORDER BY ciclo DESC
+                LIMIT 1;
+            """)
+            row = cur.fetchone()
+            if row:
+                ciclo_actual = row["ciclo"]
+
+        # Fallback duro si la tabla está vacía
+        if not ciclo_actual:
+            ciclo_actual = "2025-1"
+
+        # ------------------ RESUMEN ACADÉMICO ------------------
+        # Carreras, materias y docentes desde la vista de detalle
+        cur.execute("""
+            SELECT
+                COUNT(DISTINCT carrera_clave) AS carreras_activas,
+                COUNT(DISTINCT materia_clave) AS materias_en_plan,
+                COUNT(
+                    DISTINCT COALESCE(profesor_nombre, '') || ' ' ||
+                             COALESCE(profesor_ap, '')
+                ) AS docentes
+            FROM planes.vw_materia_alta_detalle
+            WHERE ciclo = %s
+              AND esta_activo = TRUE;
+        """, (ciclo_actual,))
+        row = cur.fetchone()
+        if row:
+            resumen["carreras_activas"] = row["carreras_activas"] or 0
+            resumen["materias_en_plan"] = row["materias_en_plan"] or 0
+            resumen["docentes"] = row["docentes"] or 0
+
+        # Alumnos distintos con inscripción en ese ciclo
+        cur.execute("""
+            SELECT COUNT(DISTINCT ai.fk_alumno) AS alumnos
+            FROM academico.alumno_inscripcion ai
+            JOIN planes.materia_alta ma
+              ON ma.materia_alta_id = ai.fk_materia_alta
+            WHERE ma.ciclo = %s;
+        """, (ciclo_actual,))
+        row = cur.fetchone()
+        if row:
+            resumen["alumnos"] = row["alumnos"] or 0
+
+        # ------------------ TABLA GRUPOS Y MATERIAS ------------------
+        cur.execute("""
+            SELECT
+              materia_alta_id,
+              carrera_clave,
+              carrera_nombre,
+              materia_clave,
+              materia_nombre,
+              semestre,
+              COALESCE(profesor_nombre || ' ' || profesor_ap, 'Sin asignar') AS docente,
+              esta_activo
+            FROM planes.vw_materia_alta_detalle
+            WHERE ciclo = %s
+            ORDER BY semestre, materia_clave;
+        """, (ciclo_actual,))
+        materias = cur.fetchall()
+        if materias:
+            primer_grupo_id = materias[0]["materia_alta_id"]
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
+        flash(f"Error cargando panel del coordinador: {e}", "danger")
+
+    return render_template(
+        "perfiles/profile_coordinador.html",
+        user=user,
+        resumen=resumen,
+        ciclo_actual=ciclo_actual,
+        materias=materias,
+        primer_grupo_id=primer_grupo_id,
+    )
+
+
+# =====================================
+# COORDINADOR – ASIGNACIÓN DE ESPACIOS
+# (vista sencilla de horarios/aulas por ciclo)
+# =====================================
+
+@app.route("/coordinador/asignacion-espacios")
+@login_required
+@role_required("Coordinador")
+def coord_asignacion_espacios():
+    user = current_user()
+    conn = None
+    ciclo_actual = None
+    asignaciones = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Reutilizamos la lógica de ciclo_actual
+        cur.execute("""
+            SELECT valor_texto
+            FROM academico.parametros_globales
+            WHERE clave = 'ciclo_activo';
+        """)
+        row = cur.fetchone()
+        if row and row["valor_texto"]:
+            ciclo_actual = row["valor_texto"]
+        else:
+            cur.execute("""
+                SELECT DISTINCT ciclo
+                FROM planes.materia_alta
+                ORDER BY ciclo DESC
+                LIMIT 1;
+            """)
+            row = cur.fetchone()
+            ciclo_actual = row["ciclo"] if row else "2025-1"
+
+        cur.execute("""
+            SELECT
+                ha.horario_id,
+                ma.ciclo,
+                m.clave  AS materia_clave,
+                m.nombre AS materia_nombre,
+                ha.dia_semana,
+                ha.hora_inicio,
+                ha.hora_fin,
+                au.clave AS aula_clave,
+                ed.numero AS edificio_numero
+            FROM infraestructura.horario_asignacion ha
+            JOIN planes.materia_alta ma
+              ON ma.materia_alta_id = ha.fk_materia_alta
+            JOIN planes.carrera_materia cm
+              ON cm.carrera_materia_id = ma.carrera_materia_id
+            JOIN planes.materia m
+              ON m.materia_id = cm.materia_id
+            JOIN infraestructura.aula au
+              ON au.aula_id = ha.fk_aula
+            JOIN infraestructura.edificio ed
+              ON ed.edificio_id = au.edificio_id
+            WHERE ma.ciclo = %s
+            ORDER BY ha.dia_semana, ha.hora_inicio, m.clave;
+        """, (ciclo_actual,))
+        asignaciones = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
+        flash(f"Error cargando asignación de espacios: {e}", "danger")
+
+    return render_template(
+        "coordinador/asignacion_espacios.html",
+        user=user,
+        ciclo_actual=ciclo_actual,
+        asignaciones=asignaciones,
+    )
+
+
+# =====================================
+# COORDINADOR – REPORTES ACADÉMICOS
+# (resumen simple por carrera/materia)
+# =====================================
+
+@app.route("/coordinador/reportes")
+@login_required
+@role_required("Coordinador")
+def coord_reportes_academicos():
+    user = current_user()
+    conn = None
+    ciclo_actual = None
+    resumen_carrera = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # ciclo_actual
+        cur.execute("""
+            SELECT valor_texto
+            FROM academico.parametros_globales
+            WHERE clave = 'ciclo_activo';
+        """)
+        row = cur.fetchone()
+        if row and row["valor_texto"]:
+            ciclo_actual = row["valor_texto"]
+        else:
+            cur.execute("""
+                SELECT DISTINCT ciclo
+                FROM planes.materia_alta
+                ORDER BY ciclo DESC
+                LIMIT 1;
+            """)
+            row = cur.fetchone()
+            ciclo_actual = row["ciclo"] if row else "2025-1"
+
+        # Resumen por carrera
+        cur.execute("""
+            SELECT
+              v.carrera_clave,
+              v.carrera_nombre,
+              COUNT(DISTINCT v.materia_clave)      AS materias,
+              COUNT(DISTINCT v.materia_alta_id)    AS grupos,
+              COUNT(DISTINCT v.profesor_nombre || ' ' || v.profesor_ap) AS docentes
+            FROM planes.vw_materia_alta_detalle v
+            WHERE v.ciclo = %s
+            GROUP BY v.carrera_clave, v.carrera_nombre
+            ORDER BY v.carrera_clave;
+        """, (ciclo_actual,))
+        resumen_carrera = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
+        flash(f"Error cargando reportes académicos: {e}", "danger")
+
+    return render_template(
+        "coordinador/reportes_academicos.html",
+        user=user,
+        ciclo_actual=ciclo_actual,
+        resumen_carrera=resumen_carrera,
+    )
+
+
+# =====================================
+# COORDINADOR – DETALLE DE GRUPO
+# =====================================
+
+@app.route("/coordinador/grupo/<int:materia_alta_id>")
+@login_required
+@role_required("Coordinador")
+def coord_detalle_grupo(materia_alta_id):
+    user = current_user()
+    conn = None
+    grupo = None
+    alumnos = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        # Datos del grupo/materia
+        cur.execute("""
+            SELECT
+              v.materia_alta_id,
+              v.ciclo,
+              v.carrera_clave,
+              v.carrera_nombre,
+              v.materia_clave,
+              v.materia_nombre,
+              v.semestre,
+              COALESCE(v.profesor_nombre || ' ' || v.profesor_ap, 'Sin asignar') AS docente,
+              v.esta_activo
+            FROM planes.vw_materia_alta_detalle v
+            WHERE v.materia_alta_id = %s;
+        """, (materia_alta_id,))
+        grupo = cur.fetchone()
+
+        # Alumnos inscritos
+        cur.execute("""
+            SELECT
+              a.numero_control,
+              TRIM(a.nombre || ' ' || a.apellido_paterno || ' ' ||
+                   COALESCE(a.apellido_materno, '')) AS alumno,
+              ai.calificacion
+            FROM academico.alumno_inscripcion ai
+            JOIN academico.alumnos a
+              ON a.numero_control = ai.fk_alumno
+            WHERE ai.fk_materia_alta = %s
+            ORDER BY a.apellido_paterno, a.apellido_materno, a.nombre;
+        """, (materia_alta_id,))
+        alumnos = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
+        flash(f"Error cargando detalle del grupo: {e}", "danger")
+
+    return render_template(
+        "coordinador/detalle_grupo.html",
+        user=user,
+        grupo=grupo,
+        alumnos=alumnos,
+    )
+
+
+# =====================================
+# COORDINADOR – AJUSTE DE CARGA (solo lectura por ahora)
+# =====================================
+
+@app.route("/coordinador/carga-academica")
+@login_required
+@role_required("Coordinador")
+def coord_carga_academica():
+    user = current_user()
+    conn = None
+    ciclo_actual = None
+    carga = []
+
+    try:
+        conn = get_connection()
+        cur = conn.cursor()
+
+        cur.execute("""
+            SELECT valor_texto
+            FROM academico.parametros_globales
+            WHERE clave = 'ciclo_activo';
+        """)
+        row = cur.fetchone()
+        if row and row["valor_texto"]:
+            ciclo_actual = row["valor_texto"]
+        else:
+            cur.execute("""
+                SELECT DISTINCT ciclo
+                FROM planes.materia_alta
+                ORDER BY ciclo DESC
+                LIMIT 1;
+            """)
+            row = cur.fetchone()
+            ciclo_actual = row["ciclo"] if row else "2025-1"
+
+        cur.execute("""
+            SELECT
+              v.materia_alta_id,
+              v.ciclo,
+              v.carrera_clave,
+              v.materia_clave,
+              v.materia_nombre,
+              v.semestre,
+              COALESCE(v.profesor_nombre || ' ' || v.profesor_ap, 'Sin asignar') AS docente,
+              v.esta_activo,
+              cm.horas_teoricas,
+              cm.horas_practicas,
+              cm.horas_totales
+            FROM planes.vw_materia_alta_detalle v
+            JOIN planes.carrera_materia cm
+              ON cm.carrera_materia_id = v.carrera_materia_id
+            WHERE v.ciclo = %s
+            ORDER BY v.semestre, v.materia_clave;
+        """, (ciclo_actual,))
+        carga = cur.fetchall()
+
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        if conn and not conn.closed:
+            conn.close()
+        flash(f"Error cargando carga académica: {e}", "danger")
+
+    return render_template(
+        "coordinador/carga_academica.html",
+        user=user,
+        ciclo_actual=ciclo_actual,
+        carga=carga,
+    )
+
+
 
 
 # =====================================

@@ -160,7 +160,7 @@
 </div>
 
 <div class="admin-card-grid">
-  <!-- Usuarios y Roles -->
+  <!-- Usuarios y Roles (YA FUNCIONA, SOLO ENLACE A /admin/usuarios) -->
   <div class="card admin-feature-card" id="mod-usuarios-roles">
     <div class="card-body d-flex flex-column">
       <div class="admin-feature-icon">
@@ -171,12 +171,12 @@
         Crear, editar, borrar, bloquear usuarios. Gestión de permisos y roles del sistema.
       </p>
       <div class="admin-feature-badges mt-auto">
-        <a href="{{ url_for('admin_usuario_nuevo') }}" class="badge badge-add text-decoration-none text-white">Alta</a>
-        <a href="{{ url_for('admin_usuarios_list', modo='edit') }}" class="badge badge-edit text-decoration-none text-white">Edit</a>
-        <a href="{{ url_for('admin_usuarios_list', modo='baja') }}" class="badge badge-del text-decoration-none text-white">Baja</a>
-        <a href="{{ url_for('admin_usuarios_list', modo='block') }}" class="badge badge-block text-decoration-none text-white">Block</a>
-        <a href="{{ url_for('admin_usuarios_list', modo='reset') }}" class="badge badge-reset text-decoration-none text-white">Reset</a>
-        <a href="{{ url_for('admin_usuarios_list', modo='buscar') }}" class="badge badge-search text-decoration-none text-white">Buscar</a>
+        <a href="{{ url_for('admin_usuarios_list') }}" class="badge badge-add text-decoration-none">Alta</a>
+        <a href="{{ url_for('admin_usuarios_list') }}?modo=editar" class="badge badge-edit text-decoration-none">Edit</a>
+        <a href="{{ url_for('admin_usuarios_list') }}?modo=baja" class="badge badge-del text-decoration-none">Baja</a>
+        <a href="{{ url_for('admin_usuarios_list') }}?modo=block" class="badge badge-block text-decoration-none">Block</a>
+        <a href="{{ url_for('admin_usuarios_list') }}?modo=reset" class="badge badge-reset text-decoration-none">Reset</a>
+        <a href="{{ url_for('admin_usuarios_list') }}?modo=buscar" class="badge badge-search text-decoration-none">Buscar</a>
       </div>
     </div>
   </div>
@@ -192,7 +192,7 @@
         Configuración de periodos, políticas de inscripción, notificaciones y límites de créditos.
       </p>
       <div class="admin-feature-badges mt-auto">
-        <span class="badge badge-edit">Configurar</span>
+        <a href="{{ url_for('admin_parametros_globales') }}" class="badge badge-edit text-decoration-none">Configurar</a>
       </div>
     </div>
   </div>
@@ -208,8 +208,8 @@
         Gestión de carreras, planes de estudio, materias y su relación con otros sistemas.
       </p>
       <div class="admin-feature-badges mt-auto">
-        <span class="badge badge-add">Agregar</span>
-        <span class="badge badge-edit">Editar</span>
+        <a href="{{ url_for('admin_catalogos') }}?accion=agregar" class="badge badge-add text-decoration-none">Agregar</a>
+        <a href="{{ url_for('admin_catalogos') }}?accion=editar" class="badge badge-edit text-decoration-none">Editar</a>
       </div>
     </div>
   </div>
@@ -225,7 +225,7 @@
         Administración de datos universitarios y formularios de inscripción o seguimiento.
       </p>
       <div class="admin-feature-badges mt-auto">
-        <span class="badge badge-edit">Diseñar</span>
+        <a href="{{ url_for('admin_formularios') }}" class="badge badge-edit text-decoration-none">Diseñar</a>
       </div>
     </div>
   </div>
@@ -241,7 +241,7 @@
         Importaciones masivas, auditoría, respaldos y políticas de seguridad avanzadas.
       </p>
       <div class="admin-feature-badges mt-auto">
-        <span class="badge badge-search">Auditar</span>
+        <a href="{{ url_for('admin_datos_seguridad') }}" class="badge badge-search text-decoration-none">Auditar</a>
       </div>
     </div>
   </div>
@@ -257,10 +257,11 @@
         Monitorea acciones y eventos que realiza cada usuario en tiempo (casi) real.
       </p>
       <div class="admin-feature-badges mt-auto">
-        <span class="badge badge-search">Ver eventos</span>
+        <a href="{{ url_for('admin_eventos') }}" class="badge badge-search text-decoration-none">Ver eventos</a>
       </div>
     </div>
   </div>
 </div>
+
 
 {% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Datos y seguridad{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Datos y seguridad</h4>
+  <a href="{{ url_for('perfil_administrador') }}" class="btn btn-outline-secondary btn-sm">
+    ← Volver al panel
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-lg-4 mb-3">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-header bg-white">
+        <strong>Resumen por rol y estado</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th class="text-end">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in resumen %}
+            <tr>
+              <td>{{ r.rol }}</td>
+              <td>
+                {% if r.estado == 'Activo' %}
+                  <span class="badge bg-success-subtle text-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning">Bloqueado</span>
+                {% endif %}
+              </td>
+              <td class="text-end">{{ r.total }}</td>
+            </tr>
+          {% endfor %}
+          {% if not resumen %}
+            <tr>
+              <td colspan="3" class="text-center text-muted py-3">
+                No hay datos de usuarios.
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8 mb-3">
+    <div class="card h-100 shadow-sm border-0">
+      <div class="card-header bg-white">
+        <strong>Usuarios del sistema</strong>
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Usuario</th>
+              <th>Correo</th>
+              <th>Roles</th>
+              <th class="text-center">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for u in usuarios %}
+            <tr>
+              <td>{{ u.id_usuario }}</td>
+              <td>{{ u.nombre_usuario }}</td>
+              <td>{{ u.correo_electronico }}</td>
+              <td>
+                <span class="badge bg-secondary-subtle text-secondary">
+                  {{ u.roles }}
+                </span>
+              </td>
+              <td class="text-center">
+                {% if u.activo %}
+                  <span class="badge bg-success-subtle text-success">Activo</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning">Bloqueado</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          {% if not usuarios %}
+            <tr>
+              <td colspan="5" class="text-center text-muted py-3">
+                No hay usuarios registrados.
+              </td>
+            </tr>
+          {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Formularios e información académica{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Formularios e información académica</h5>
+    <a href="{{ url_for('perfil_administrador') }}" class="btn btn-outline-secondary btn-sm">
+      ← Volver al panel
+    </a>
+  </div>
+
+  <div class="card shadow-sm mb-3">
+    <div class="card-header">
+      Resumen de inscripciones por ciclo
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Ciclo</th>
+            <th>Alumnos</th>
+            <th>Inscripciones</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in resumen_ciclos %}
+          <tr>
+            <td>{{ r.ciclo }}</td>
+            <td>{{ r.num_alumnos }}</td>
+            <td>{{ r.num_inscripciones }}</td>
+            <td>
+              <a href="{{ url_for('admin_formularios', ciclo=r.ciclo) }}" class="btn btn-link btn-sm">
+                Ver detalle
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="text-muted text-center">Sin inscripciones registradas.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% if ciclo_seleccionado %}
+  <div class="card shadow-sm">
+    <div class="card-header">
+      Detalle por carrera – Ciclo {{ ciclo_seleccionado }}
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Carrera</th>
+            <th>Alumnos</th>
+            <th>Inscripciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in detalle %}
+          <tr>
+            <td>{{ d.carrera }}</td>
+            <td>{{ d.alumnos }}</td>
+            <td>{{ d.inscripciones }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="text-muted text-center">Sin datos para este ciclo.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

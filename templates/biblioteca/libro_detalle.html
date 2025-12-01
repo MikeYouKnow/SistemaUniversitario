@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Detalle de libro{% endblock %}
+
+{% block content %}
+<div class="container mt-4 page-wrapper">
+
+  <a href="{{ url_for('perfil_bibliotecario') }}" class="btn btn-link mb-3">
+    ← Volver al panel del bibliotecario
+  </a>
+
+  {% if libro %}
+    <div class="card-soft mb-3">
+      <div class="card-soft-header">
+        <span class="section-title">{{ libro.titulo_libro }}</span>
+      </div>
+      <div class="card-soft-body">
+        <p class="mb-1"><strong>Clasificación:</strong>
+          {{ libro.codigo_clasificacion }} – {{ libro.clasificacion_desc }}
+        </p>
+        <p class="mb-1"><strong>Editorial:</strong> {{ libro.nombre_editorial }}</p>
+        <p class="mb-1"><strong>Edición / Año:</strong>
+          {{ libro.edicion or '-' }} / {{ libro.anio_edicion or '-' }}
+        </p>
+        <p class="mb-1"><strong>ISBN:</strong> {{ libro.isbn or '-' }}</p>
+        <p class="mb-1"><strong>Ejemplares:</strong>
+          {{ libro.cantidad }} ({{ libro.disponibles }} disponibles)
+        </p>
+        <p class="mb-0"><strong>Ubicación:</strong> {{ libro.ubicacion or 'Sin ubicación' }}</p>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Autores</span>
+          </div>
+          <div class="card-soft-body">
+            {% if autores %}
+              <ul class="mb-0">
+                {% for a in autores %}
+                  <li>{{ a.nombre_autor }} <span class="text-muted-soft small">({{ a.tipo_autor }})</span></li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted-soft mb-0">Sin autores registrados.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-8">
+        <div class="card-soft h-100">
+          <div class="card-soft-header">
+            <span class="section-title">Préstamos recientes</span>
+          </div>
+          <div class="card-soft-body">
+            {% if prestamos %}
+              <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Alumno</th>
+                      <th>Fecha préstamo</th>
+                      <th>Dev. estimada</th>
+                      <th>Dev. real</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for p in prestamos %}
+                    <tr>
+                      <td>{{ p.id_prestamo }}</td>
+                      <td>{{ p.fk_alumno or 'Personal' }}</td>
+                      <td>{{ p.fecha_prestamo }}</td>
+                      <td>{{ p.fecha_devolucion_estimada }}</td>
+                      <td>{{ p.fecha_devolucion_real or '-' }}</td>
+                      <td>{{ p.estado }}</td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p class="text-muted-soft mb-0">Este libro no tiene préstamos registrados.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  {% else %}
+    <div class="alert alert-danger">
+      No se encontró información del libro.
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

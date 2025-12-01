@@ -1,89 +1,19 @@
-{# templates/dashboard_docente.html #}
-{% extends "base.html" %}
-
-{% block title %}Dashboard Docente{% endblock %}
-
-{% block content %}
-<div class="container mt-4 page-wrapper">
-
-  <div class="mb-3">
-    <h2 class="mb-1">Dashboard del docente</h2>
-    <p class="text-muted-soft mb-0">
-      Bienvenido, {{ user.nombre_usuario if user else 'Docente' }}.
-      Accede rápidamente a tus materias, grupos y herramientas de apoyo.
-    </p>
-  </div>
-
-  <div class="row g-3">
-
-    <!-- Tarjeta: Perfil docente -->
-    <div class="col-md-6 col-lg-4">
-      <a
-        href="{{ url_for('perfil_docente') }}"
-        class="text-decoration-none text-reset"
-      >
-        <div class="card-soft h-100">
-          <div class="card-soft-header">
-            <span class="section-title">Perfil docente</span>
-          </div>
-          <div class="card-soft-body">
-            <p class="text-muted-soft mb-0">
-              Consulta tu información general y accesos a módulos relacionados.
-            </p>
-          </div>
-        </div>
-      </a>
-    </div>
-
-    <!-- Tarjeta: Materias & Horario (futuro) -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card-soft h-100">
-        <div class="card-soft-header">
-          <span class="section-title">Materias y horario</span>
-        </div>
-        <div class="card-soft-body">
-          <p class="text-muted-soft mb-2">
-            Visualización de grupos, horarios y carga académica asignada.
-          </p>
-          <small class="text-muted-soft">
-            Se puede enlazar con un módulo específico de horarios por docente.
-          </small>
-        </div>
+<!-- Dentro de dashboard_docente.html, cambia esa tarjeta a: -->
+<div class="col-md-6 col-lg-4">
+  <a href="{{ url_for('docente_grupos_materias') }}"
+     class="text-decoration-none text-reset">
+    <div class="card-soft h-100">
+      <div class="card-soft-header">
+        <span class="section-title">Materias y horario</span>
+      </div>
+      <div class="card-soft-body">
+        <p class="text-muted-soft mb-2">
+          Visualización de grupos, horarios y carga académica asignada.
+        </p>
+        <small class="text-muted-soft">
+          Vinculado a tus grupos activos en este ciclo.
+        </small>
       </div>
     </div>
-
-    <!-- Tarjeta: Estudiantes (futuro) -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card-soft h-100">
-        <div class="card-soft-header">
-          <span class="section-title">Estudiantes</span>
-        </div>
-        <div class="card-soft-body">
-          <p class="text-muted-soft mb-2">
-            Listados de estudiantes por grupo, registro de asistencia y desempeño.
-          </p>
-          <small class="text-muted-soft">
-            Este módulo puede conectarse posteriormente a reportes académicos.
-          </small>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tarjeta: Biblioteca / Material -->
-    <div class="col-md-6 col-lg-4">
-      <div class="card-soft h-100">
-        <div class="card-soft-header">
-          <span class="section-title">Material y biblioteca</span>
-        </div>
-        <div class="card-soft-body">
-          <p class="text-muted-soft mb-0">
-            Sugerencias de bibliografía y seguimiento de material recomendado para los grupos.
-          </p>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
+  </a>
 </div>
-{% endblock %}

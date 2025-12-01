@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Diseñar formulario{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">
+    Diseñar formulario – {{ formulario.nombre }}
+  </h4>
+  <a href="{{ url_for('admin_formularios') }}" class="btn btn-outline-secondary btn-sm">
+    ← Volver a formularios
+  </a>
+</div>
+
+<div class="row">
+  <!-- Columna izquierda: propiedades / metadatos -->
+  <div class="col-lg-5 mb-3">
+    <form method="post" class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Propiedades del formulario</span>
+        <span class="text-muted small">ID: {{ formulario.id_formulario }}</span>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label">Nombre del formulario</label>
+          <input type="text"
+                 name="nombre"
+                 class="form-control"
+                 value="{{ formulario.nombre }}"
+                 required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Tipo</label>
+          {% set tipo_actual = formulario.tipo %}
+          <select name="tipo" class="form-select">
+            {% for t in ["Alumno", "Administrativo", "Docente", "Otro"] %}
+              <option value="{{ t }}" {% if t == tipo_actual %}selected{% endif %}>
+                {{ t }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Versión</label>
+          <input type="number"
+                 name="version"
+                 class="form-control"
+                 step="0.1"
+                 min="0"
+                 value="{{ formulario.version }}">
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Descripción</label>
+          <textarea name="descripcion"
+                    class="form-control"
+                    rows="3">{{ formulario.descripcion }}</textarea>
+        </div>
+
+        <div class="mb-1">
+          <label class="form-label">Estatus (solo visual)</label>
+          <input type="text" class="form-control" value="Inactivo" disabled>
+        </div>
+
+        <p class="text-muted small mt-2 mb-3">
+          Más adelante puedes conectar este estatus a una columna real en BD.
+        </p>
+
+        <div class="d-flex justify-content-end">
+          <button type="submit" class="btn btn-primary">
+            Guardar cambios
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- Columna derecha: preview visual -->
+  <div class="col-lg-7 mb-3">
+    <div class="card h-100">
+      <div class="card-header">
+        Diseño del formulario (demo visual)
+      </div>
+      <div class="card-body">
+        <p class="text-muted small">
+          Esta sección es un <strong>preview</strong> visual para ver cómo
+          podría mostrarse al alumno/usuario. Más adelante se conectará aquí
+          una tabla de campos (por ejemplo <code>academico.formulario_campos</code>)
+          y agregar un diseñador drag &amp; drop.
+        </p>
+
+        <div class="mb-3">
+          <label class="form-label">Nombre completo del alumno</label>
+          <div class="form-control-plaintext border rounded bg-light px-3 py-2">
+            Campo de ejemplo (solo vista)
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Número de control</label>
+          <div class="form-control-plaintext border rounded bg-light px-3 py-2">
+            Campo de ejemplo (solo vista)
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Carrera / Programa</label>
+          <div class="form-control-plaintext border rounded bg-light px-3 py-2">
+            ISC – Ingeniería en Sistemas Computacionales
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Comentarios adicionales</label>
+          <div class="form-control-plaintext border rounded bg-light px-3 py-3">
+            Área de texto de ejemplo (solo vista)
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end">
+          <button type="button" class="btn btn-success" disabled>
+            Enviar (demo)
+          </button>
+        </div>
+
+        <p class="text-muted small mt-3 mb-0">
+          Nota: por ahora este botón es solo demostrativo. La parte importante
+          es que el flujo <strong>Diseñar nuevo → editar → guardar</strong>
+          ya funciona y persiste en la tabla
+          <code>academico.formularios_institucionales</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

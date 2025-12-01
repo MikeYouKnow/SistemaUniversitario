@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Nuevo formulario institucional{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0">Nuevo formulario institucional</h4>
+  <a href="{{ url_for('admin_formularios') }}" class="btn btn-outline-secondary btn-sm">
+    ← Volver a la lista
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-lg-7 mb-3">
+    <div class="card">
+      <div class="card-header">
+        Datos básicos del formulario
+      </div>
+      <div class="card-body">
+        <form method="post" class="row g-3">
+
+          <div class="col-12">
+            <label class="form-label">Nombre del formulario</label>
+            <input
+              type="text"
+              name="nombre"
+              class="form-control"
+              maxlength="200"
+              required
+              placeholder="Ej. Solicitud de inscripción"
+              value="{{ request.form.nombre or '' }}"
+            >
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Tipo</label>
+            <select name="tipo" class="form-select" required>
+              {% set t = request.form.tipo or '' %}
+              <option value="" disabled {{ '' == t and 'selected' or '' }}>Selecciona una opción</option>
+              <option value="Alumno" {{ t == 'Alumno' and 'selected' or '' }}>Alumno</option>
+              <option value="Administrativo" {{ t == 'Administrativo' and 'selected' or '' }}>Administrativo</option>
+              <option value="Docente" {{ t == 'Docente' and 'selected' or '' }}>Docente</option>
+              <option value="Otro" {{ t == 'Otro' and 'selected' or '' }}>Otro</option>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Versión</label>
+            <input
+              type="text"
+              name="version"
+              class="form-control"
+              required
+              placeholder="Ej. 1.0"
+              value="{{ request.form.version or '1.0' }}"
+            >
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Descripción</label>
+            <textarea
+              name="descripcion"
+              class="form-control"
+              rows="3"
+              placeholder="Breve descripción del propósito del formulario"
+            >{{ request.form.descripcion or '' }}</textarea>
+          </div>
+
+          <div class="col-12 d-flex justify-content-end gap-2">
+            <a href="{{ url_for('admin_formularios') }}" class="btn btn-outline-secondary">
+              Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary">
+              Guardar y volver a la lista
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5 mb-3">
+    <div class="card h-100">
+      <div class="card-header">
+        Ayuda rápida
+      </div>
+      <div class="card-body">
+        <p class="text-muted small">
+          Este formulario sólo captura los datos generales del formato
+          institucional (nombre, tipo, versión y una breve descripción).
+        </p>
+        <p class="text-muted small mb-2">
+          Una vez guardado, el nuevo registro aparecerá en la tabla de
+          <strong>Formularios y académico</strong>. Desde ahí puedes usar el
+          botón <span class="badge bg-info text-dark">Diseñar</span> para
+          trabajar en la estructura interna del formulario (campos, secciones, etc.).
+        </p>
+        <ul class="small mb-0">
+          <li><strong>Tipo</strong>: quién usa el formulario (Alumno, Docente, etc.).</li>
+          <li><strong>Versión</strong>: te ayuda a llevar control cuando lo modifiques.</li>
+          <li><strong>Descripción</strong>: texto corto para que otros sepan para qué sirve.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

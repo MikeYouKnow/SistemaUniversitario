@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Catálogos académicos{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="mb-0">Catálogos académicos</h5>
+    <a href="{{ url_for('perfil_administrador') }}" class="btn btn-outline-secondary btn-sm">
+      ← Volver al panel
+    </a>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          Carreras
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Carrera</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for c in carreras %}
+              <tr>
+                <td>{{ c.carrera_id }}</td>
+                <td>{{ c.carrera_nombre }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="2" class="text-muted text-center">Sin carreras registradas.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between">
+          <span>Materias por carrera</span>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead>
+              <tr>
+                <th>Clave</th>
+                <th>Materia</th>
+                <th>Carrera</th>
+                <th>Sem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for m in materias %}
+              <tr>
+                <td>{{ m.clave }}</td>
+                <td>{{ m.materia_nombre }}</td>
+                <td>{{ m.carrera_nombre }}</td>
+                <td>{{ m.semestre }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-muted text-center">Sin materias registradas.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <small class="text-muted fst-italic d-block mt-2">
+        Por ahora esta vista es de consulta. Si quieres implementar altas/bajas de materias,
+        podemos agregar formularios específicos después.
+      </small>
+    </div>
+  </div>
+</div>
+{% endblock %}

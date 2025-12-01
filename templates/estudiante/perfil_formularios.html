@@ -80,14 +80,15 @@
           Estado de tus fichas, entrevistas, estudios socioeconómicos y otros formatos.
         </div>
       </div>
-      <div>
-        <input
-          type="text"
-          class="form-control section-search-input"
-          placeholder="Buscar formulario por nombre..."
-          oninput="filtrarFormularios(this.value)"
-        >
-      </div>
+      <div class="col-12 col-md-4 text-end">
+  <input
+    type="text"
+    class="form-control section-search-input"
+    placeholder="Buscar formulario por nombre..."
+    oninput="filtrarFormularios(this.value)"
+  >
+</div>
+
     </div>
 
     {% if formularios %}

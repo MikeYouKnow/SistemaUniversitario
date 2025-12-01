@@ -502,3 +502,357 @@ ON CONFLICT DO NOTHING;
 
 
 COMMIT;
+
+
+-- =========================================
+-- 8) PARÁMETROS GLOBALES (NUEVOS)
+-- =========================================
+INSERT INTO academico.parametros_globales(clave, valor_texto, descripcion, categoria)
+VALUES
+  ('ciclo_activo', '2025-1', 'Ciclo escolar actual', 'inscripciones'),
+  ('creditos_maximos_semestre', '36', 'Límite de créditos por semestre', 'inscripciones'),
+  ('permite_reinscripcion_linea', 'true', 'Permitir reinscripción en línea', 'inscripciones')
+ON CONFLICT (clave) DO UPDATE
+SET valor_texto = EXCLUDED.valor_texto,
+    descripcion = EXCLUDED.descripcion,
+    categoria   = EXCLUDED.categoria;
+
+-- =========================================
+-- 9) FORMULARIOS INSTITUCIONALES (NUEVOS)
+-- =========================================
+INSERT INTO academico.formularios_institucionales(nombre, tipo, version, descripcion)
+VALUES
+  ('Solicitud de inscripción', 'Alumno', 1.0,
+   'Formulario básico de inscripción de nuevo ingreso'),
+  ('Formato de reinscripción', 'Alumno', 1.1,
+   'Formato simplificado para reinscripción en línea'),
+  ('Reporte de baja temporal', 'Administrativo', 1.0,
+   'Formato para gestionar la baja temporal de alumnos')
+ON CONFLICT (nombre, version) DO NOTHING;
+
+-- =========================================
+-- 10) EVENTOS DE SEGURIDAD (OPCIONALES DEMO)
+-- =========================================
+INSERT INTO seguridad.eventos(tipo, usuario_id, descripcion, datos)
+VALUES
+  ('login', (SELECT id_usuario FROM seguridad.usuarios WHERE nombre_usuario='admin1'),
+   'Inicio de sesión exitoso de admin1',
+   '{"ip":"127.0.0.1"}'::jsonb),
+  ('alta_usuario', (SELECT id_usuario FROM seguridad.usuarios WHERE nombre_usuario='admin1'),
+   'Creación inicial de usuarios demo',
+   '{}');
+
+
+-- =========================================
+-- Extras
+-- =========================================
+-- ESQUEMA: seguridad (registro de eventos para consola admin)
+CREATE TABLE IF NOT EXISTS seguridad.eventos (
+    id_evento     BIGSERIAL PRIMARY KEY,
+    fecha_evento  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    tipo          VARCHAR(80) NOT NULL,
+    usuario       VARCHAR(80),
+    descripcion   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_eventos_fecha
+    ON seguridad.eventos (fecha_evento DESC);
+
+INSERT INTO seguridad.eventos (tipo, usuario, descripcion)
+VALUES
+  ('LOGIN', 'admin1', 'Inicio de sesión de prueba'),
+  ('CREACION_USUARIO', 'admin1', 'Usuario de ejemplo creado'),
+  ('BLOQUEO_USUARIO', 'admin1', 'Bloqueo de usuario de prueba')
+ON CONFLICT DO NOTHING;
+
+
+-- ========= PARÁMETROS GLOBALES (OPCIONAL) =========
+CREATE TABLE IF NOT EXISTS academico.parametros_globales (
+  id_parametro  SERIAL PRIMARY KEY,
+  clave         VARCHAR(80) UNIQUE NOT NULL,
+  valor_texto   VARCHAR(255),
+  descripcion   TEXT
+);
+
+INSERT INTO academico.parametros_globales (clave, valor_texto, descripcion)
+VALUES
+  ('creditos_normales', '24', 'Créditos máximos estándar por semestre'),
+  ('creditos_sobrecarga', '32', 'Créditos máximos con sobrecarga autorizada'),
+  ('max_materias_reprobadas', '3', 'Máximo de materias reprobadas permitidas')
+ON CONFLICT (clave) DO UPDATE
+SET valor_texto = EXCLUDED.valor_texto,
+    descripcion = EXCLUDED.descripcion;
+
+
+-- ========= FORMULARIOS INSTITUCIONALES (OPCIONAL) =========
+CREATE TABLE IF NOT EXISTS academico.formularios_institucionales (
+  id_formulario SERIAL PRIMARY KEY,
+  nombre        VARCHAR(200) NOT NULL,
+  tipo          VARCHAR(40)  NOT NULL,
+  version       NUMERIC(3,1) NOT NULL DEFAULT 1.0,
+  descripcion   TEXT,
+  UNIQUE (nombre, version)
+);
+
+INSERT INTO academico.formularios_institucionales (nombre, tipo, version, descripcion)
+VALUES
+  ('Solicitud de inscripción', 'Alumno', 1.0,
+   'Formulario básico de inscripción de nuevo ingreso'),
+  ('Formato de reinscripción', 'Alumno', 1.1,
+   'Formato simplificado para reinscripción en línea'),
+  ('Reporte de baja temporal', 'Administrativo', 1.0,
+   'Formato para gestionar la baja temporal de alumnos')
+ON CONFLICT (nombre, version) DO NOTHING;
+
+
+-- ========= EVENTOS DE SEGURIDAD (OPCIONAL) =========
+CREATE TABLE IF NOT EXISTS seguridad.eventos (
+  id_evento     BIGSERIAL PRIMARY KEY,
+  fecha_evento  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  tipo          VARCHAR(50) NOT NULL,
+  usuario       TEXT,
+  descripcion   TEXT
+);
+
+-- Algunos eventos demo
+INSERT INTO seguridad.eventos (tipo, usuario, descripcion)
+VALUES
+  ('login', 'admin1', 'Inicio de sesión exitoso de admin1'),
+  ('alta_usuario', 'admin1', 'Creación de usuarios demo iniciales');
+
+
+INSERT INTO academico.parametros_globales (clave, valor_texto, descripcion, categoria)
+VALUES
+  ('creditos_normales', '24', 'Créditos máximos estándar', 'inscripciones'),
+  ('creditos_sobrecarga', '32', 'Créditos máximos con sobrecarga', 'inscripciones'),
+  ('max_materias_reprobadas', '3', 'Límite de materias reprobadas', 'inscripciones')
+ON CONFLICT (clave) DO UPDATE
+SET valor_texto = EXCLUDED.valor_texto,
+    descripcion = EXCLUDED.descripcion,
+    categoria   = EXCLUDED.categoria;
+
+DO $$
+DECLARE
+    v_user text := 'backend_app'; 
+BEGIN
+    -- Dar acceso al esquema academico
+    EXECUTE format('GRANT USAGE ON SCHEMA academico TO %I;', v_user);
+
+    -- =========================================
+    -- 1) TABLA academico.parametros_globales
+    -- =========================================
+    EXECUTE format(
+        'GRANT SELECT, INSERT, UPDATE, DELETE ON academico.parametros_globales TO %I;',
+        v_user
+    );
+
+    -- secuencias asociadas (id_parametro, etc.)
+    PERFORM 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'academico'
+      AND c.relname = 'parametros_globales_id_parametro_seq';
+
+    IF FOUND THEN
+        EXECUTE format(
+            'GRANT USAGE, SELECT, UPDATE ON SEQUENCE academico.parametros_globales_id_parametro_seq TO %I;',
+            v_user
+        );
+    END IF;
+
+    -- =========================================
+    -- 2) TABLA academico.formularios_institucionales
+    -- =========================================
+    EXECUTE format(
+        'GRANT SELECT, INSERT, UPDATE, DELETE ON academico.formularios_institucionales TO %I;',
+        v_user
+    );
+
+    PERFORM 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'academico'
+      AND c.relname = 'formularios_institucionales_id_formulario_seq';
+
+    IF FOUND THEN
+        EXECUTE format(
+            'GRANT USAGE, SELECT, UPDATE ON SEQUENCE academico.formularios_institucionales_id_formulario_seq TO %I;',
+            v_user
+        );
+    END IF;
+END $$;
+
+BEGIN;
+
+-- Usamos el mismo search_path que tu DDL
+SET search_path = seguridad, academico, planes, infraestructura, biblioteca, rrhh, public;
+
+-- 1) Asegurar que exista el estado "Inscrito"
+INSERT INTO academico.cat_estado_inscripcion (nombre)
+SELECT 'Inscrito'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM academico.cat_estado_inscripcion
+    WHERE nombre = 'Inscrito'
+);
+
+-- 2) Inscribir al alumno ligado al usuario estu1
+--    en TODOS los grupos actuales (planes.materia_alta)
+INSERT INTO academico.alumno_inscripcion (
+    fk_alumno,
+    fk_materia_alta,
+    fk_estado,
+    calificacion
+)
+SELECT
+    aua.numero_control,          -- alumno (estu1)
+    ma.materia_alta_id,          -- cada grupo existente
+    (SELECT estado_id
+     FROM academico.cat_estado_inscripcion
+     WHERE nombre = 'Inscrito'
+     LIMIT 1) AS fk_estado,
+    NULL::NUMERIC(5,2)           -- sin calificación inicial
+FROM seguridad.usuarios u_est
+JOIN seguridad.auth_user_alumno aua
+  ON aua.user_id = u_est.id_usuario
+CROSS JOIN planes.materia_alta ma
+WHERE u_est.nombre_usuario = 'estu1'
+ON CONFLICT ON CONSTRAINT uq_alumno_materia_ciclo DO NOTHING;
+
+COMMIT;
+
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS academico.avisos_docente (
+  aviso_id         SERIAL PRIMARY KEY,
+  fk_materia_alta  INT REFERENCES planes.materia_alta(materia_alta_id) ON DELETE CASCADE,
+  titulo           VARCHAR(200) NOT NULL,
+  mensaje          TEXT NOT NULL,
+  creado_en        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMIT;
+
+INSERT INTO academico.avisos_docente (fk_materia_alta, titulo, mensaje)
+VALUES
+(
+  (
+    SELECT ma.materia_alta_id
+    FROM planes.materia_alta ma
+    JOIN rrhh.personal p
+      ON p.id_personal = ma.fk_personal
+    JOIN seguridad.usuarios u
+      ON u.id_usuario = p.fk_id_usuario
+    WHERE u.nombre_usuario = 'doc1'
+    ORDER BY ma.materia_alta_id
+    LIMIT 1
+  ),
+  'Entrega de proyecto final',
+  'Recuerda subir tu proyecto antes del viernes.'
+),
+(
+  (
+    SELECT ma.materia_alta_id
+    FROM planes.materia_alta ma
+    JOIN rrhh.personal p
+      ON p.id_personal = ma.fk_personal
+    JOIN seguridad.usuarios u
+      ON u.id_usuario = p.fk_id_usuario
+    WHERE u.nombre_usuario = 'doc1'
+    ORDER BY ma.materia_alta_id
+    LIMIT 1
+  ),
+  'Examen parcial',
+  'El examen será la próxima semana en horario de clase.'
+);
+
+
+BEGIN;
+
+-- Clasificaciones
+INSERT INTO biblioteca.clasificaciones (codigo_clasificacion, descripcion) VALUES
+  ('QA76',   'Sistemas operativos y computación'),
+  ('QA76.9', 'Bases de datos y software')
+ON CONFLICT (codigo_clasificacion) DO NOTHING;
+
+-- Editoriales
+INSERT INTO biblioteca.editoriales (nombre_editorial, pais) VALUES
+  ('Pearson',  'México'),
+  ('McGraw-Hill', 'México')
+ON CONFLICT (nombre_editorial) DO NOTHING;
+
+-- Temas (opcional, por si luego los usas)
+INSERT INTO biblioteca.temas (nombre_tema) VALUES
+  ('Sistemas operativos'),
+  ('Bases de datos')
+ON CONFLICT (nombre_tema) DO NOTHING;
+
+-- Autores
+INSERT INTO biblioteca.autores (nombre_autor, nacionalidad) VALUES
+  ('Abraham Silberschatz', 'Estados Unidos'),
+  ('Henry F. Korth',       'Estados Unidos'),
+  ('S. Sudarshan',         'India'),
+  ('Elmasri Navathe',      'Estados Unidos')
+ON CONFLICT (nombre_autor) DO NOTHING;
+
+-- Libros
+INSERT INTO biblioteca.libros
+  (id_clasificacion, titulo_libro, id_editorial, edicion, anio_edicion, isbn, fuente_recurso, incluye_cd)
+SELECT
+  c.id_clasificacion,
+  'Sistemas Operativos Modernos',
+  e.id_editorial,
+  3, 2014,
+  9786073211234,
+  'Compra', FALSE
+FROM biblioteca.clasificaciones c,
+     biblioteca.editoriales     e
+WHERE c.codigo_clasificacion = 'QA76'
+  AND e.nombre_editorial = 'Pearson'
+ON CONFLICT (isbn) DO NOTHING;
+
+INSERT INTO biblioteca.libros
+  (id_clasificacion, titulo_libro, id_editorial, edicion, anio_edicion, isbn, fuente_recurso, incluye_cd)
+SELECT
+  c.id_clasificacion,
+  'Fundamentos de Bases de Datos',
+  e.id_editorial,
+  6, 2016,
+  9786071500001,
+  'Compra', FALSE
+FROM biblioteca.clasificaciones c,
+     biblioteca.editoriales     e
+WHERE c.codigo_clasificacion = 'QA76.9'
+  AND e.nombre_editorial = 'McGraw-Hill'
+ON CONFLICT (isbn) DO NOTHING;
+
+-- Inventario (ejemplares)
+INSERT INTO biblioteca.inventario (id_libro, cantidad, cantidad_disponible, ubicacion)
+SELECT l.id_libro, 4, 4, 'Estante A-1'
+FROM biblioteca.libros l
+WHERE l.isbn = 9786073211234
+ON CONFLICT (id_libro) DO NOTHING;
+
+INSERT INTO biblioteca.inventario (id_libro, cantidad, cantidad_disponible, ubicacion)
+SELECT l.id_libro, 4, 4, 'Estante B-2'
+FROM biblioteca.libros l
+WHERE l.isbn = 9786071500001
+ON CONFLICT (id_libro) DO NOTHING;
+
+-- Relación autores-libros
+INSERT INTO biblioteca.autores_libros (id_libro, id_autor, tipo_autor)
+SELECT l.id_libro, a.id_autor, 'Principal'
+FROM biblioteca.libros  l,
+     biblioteca.autores a
+WHERE l.isbn = 9786073211234
+  AND a.nombre_autor = 'Abraham Silberschatz'
+ON CONFLICT (id_libro, id_autor) DO NOTHING;
+
+INSERT INTO biblioteca.autores_libros (id_libro, id_autor, tipo_autor)
+SELECT l.id_libro, a.id_autor, 'Principal'
+FROM biblioteca.libros  l,
+     biblioteca.autores a
+WHERE l.isbn = 9786071500001
+  AND a.nombre_autor = 'Elmasri Navathe'
+ON CONFLICT (id_libro, id_autor) DO NOTHING;
+
+COMMIT;
+
